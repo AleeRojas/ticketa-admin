@@ -14,6 +14,8 @@ import OrdersView from './components/orders/OrdersView';
 import StatsView from './components/stats/StatsView';
 import WooSyncStatus from './components/woocommerce/WooSyncStatus';
 import { useAppContext } from './context/AppContext';
+import NetworkStatus from './components/common/NetworkStatus';
+import ConflictResolutionModal from './components/modals/ConflictResolutionModal';
 
 // Componente principal de la aplicación que maneja las vistas
 const MainContent = () => {
@@ -50,6 +52,9 @@ const MainContent = () => {
       
       {/* Menú contextual */}
       {showContextMenu.visible && <TableContextMenu />}
+
+      <NetworkStatus />
+      <ConflictResolutionModal />
     </div>
   );
 };

@@ -100,7 +100,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm text-gray-500 mb-1">Ventas por Producto</p>
-              <p className="text-3xl font-bold">{totalRevenue.toFixed(2)} €</p>
+              <p className="text-3xl font-bold">{totalRevenue} </p>
             </div>
             <div className="p-3 rounded-full bg-green-100 text-green-600">
               <TrendingUp size={24} />
@@ -125,7 +125,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
             </div>
           </div>
           <p className="mt-2 text-sm text-gray-500">
-            {totalProfit.toFixed(2)} € beneficio
+            {totalProfit}  beneficio
           </p>
         </div>
         
@@ -168,7 +168,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
                       </div>
                     </td>
                     <td className="py-2 text-sm text-center">{product.quantity}</td>
-                    <td className="py-2 text-sm text-right font-medium">{product.revenue.toFixed(2)} €</td>
+                    <td className="py-2 text-sm text-right font-medium">{product.revenue} </td>
                   </tr>
                 ))}
                 {topProducts.length === 0 && (
@@ -238,7 +238,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
                     ({category.products} productos, {category.quantity} vendidos)
                   </span>
                 </div>
-                <span className="text-gray-900 font-medium">{category.revenue.toFixed(2)} €</span>
+                <span className="text-gray-900 font-medium">{category.revenue} </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
@@ -290,7 +290,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-green-600">{margin.toFixed(1)}%</p>
-                        <p className="text-xs text-gray-500">{product.profit.toFixed(2)} €</p>
+                        <p className="text-xs text-gray-500">{product.profit} </p>
                       </div>
                     </div>
                   );
@@ -320,7 +320,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-red-600">{margin.toFixed(1)}%</p>
-                        <p className="text-xs text-gray-500">{product.profit.toFixed(2)} €</p>
+                        <p className="text-xs text-gray-500">{product.profit} </p>
                       </div>
                     </div>
                   );
@@ -354,7 +354,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
           <div className="border p-4 rounded-lg">
             <h4 className="font-medium text-gray-700 mb-2">Valoración del Stock</h4>
             <p className="text-2xl font-bold">
-              {products.reduce((sum, p) => sum + (p.cost || 0), 0).toFixed(2)} €
+              {products.reduce((sum, p) => sum + (p.cost || 0), 0)} 
             </p>
             <p className="text-sm text-gray-500 mt-1">
               Valor estimado del inventario
@@ -385,7 +385,7 @@ const ProductStats = ({ orders, products, dateRange }) => {
                           <span className="font-medium">{product.name}</span>
                         </td>
                         <td className="py-2 text-sm text-center">{product.category}</td>
-                        <td className="py-2 text-sm text-right font-medium">{product.price.toFixed(2)} €</td>
+                        <td className="py-2 text-sm text-right font-medium">{product.price} </td>
                       </tr>
                     ))
                   }

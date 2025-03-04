@@ -56,7 +56,7 @@ const OrderStats = ({ stats }) => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Importe Total</p>
-            <p className="text-2xl font-semibold">{stats.totalAmount.toFixed(2)} €</p>
+            <p className="text-2xl font-semibold">{stats.totalAmount} </p>
           </div>
           <div className="rounded-full bg-emerald-100 p-2 text-emerald-600">
             <TrendingUp size={20} />

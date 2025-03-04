@@ -34,7 +34,13 @@ const ProductModal = ({ onClose, product, categories }) => {
   // Resetear el formulario cuando cambia el producto
   useEffect(() => {
     if (product) {
-      setFormData({ ...product });
+      // Asegurarse de que ingredients y allergens sean arrays
+      const formattedProduct = {
+        ...product,
+        ingredients: Array.isArray(product.ingredients) ? product.ingredients : [],
+        allergens: Array.isArray(product.allergens) ? product.allergens : []
+      };
+      setFormData(formattedProduct);
     } else {
       setFormData(initialState);
     }
@@ -66,9 +72,12 @@ const ProductModal = ({ onClose, product, categories }) => {
   // Añadir un nuevo ingrediente
   const addIngredient = () => {
     if (newIngredient.trim() !== '') {
+      // Asegurarse de que ingredients sea un array
+      const currentIngredients = Array.isArray(formData.ingredients) ? formData.ingredients : [];
+      
       setFormData({
         ...formData,
-        ingredients: [...(formData.ingredients || []), newIngredient.trim()]
+        ingredients: [...currentIngredients, newIngredient.trim()]
       });
       setNewIngredient('');
     }
@@ -76,6 +85,9 @@ const ProductModal = ({ onClose, product, categories }) => {
   
   // Eliminar un ingrediente
   const removeIngredient = (index) => {
+    // Asegurarse de que ingredients sea un array
+    if (!Array.isArray(formData.ingredients)) return;
+    
     const updatedIngredients = [...formData.ingredients];
     updatedIngredients.splice(index, 1);
     setFormData({
@@ -87,9 +99,12 @@ const ProductModal = ({ onClose, product, categories }) => {
   // Añadir un nuevo alérgeno
   const addAllergen = () => {
     if (newAllergen.trim() !== '') {
+      // Asegurarse de que allergens sea un array
+      const currentAllergens = Array.isArray(formData.allergens) ? formData.allergens : [];
+      
       setFormData({
         ...formData,
-        allergens: [...(formData.allergens || []), newAllergen.trim()]
+        allergens: [...currentAllergens, newAllergen.trim()]
       });
       setNewAllergen('');
     }
@@ -97,6 +112,9 @@ const ProductModal = ({ onClose, product, categories }) => {
   
   // Eliminar un alérgeno
   const removeAllergen = (index) => {
+    // Asegurarse de que allergens sea un array
+    if (!Array.isArray(formData.allergens)) return;
+    
     const updatedAllergens = [...formData.allergens];
     updatedAllergens.splice(index, 1);
     setFormData({
@@ -108,7 +126,15 @@ const ProductModal = ({ onClose, product, categories }) => {
   // Manejar el envío del formulario
   const handleSubmit = (e) => {
     e.preventDefault();
-    handleSaveProduct(formData);
+    
+    // Asegurarse de que ingredients y allergens sean arrays
+    const finalData = {
+      ...formData,
+      ingredients: Array.isArray(formData.ingredients) ? formData.ingredients : [],
+      allergens: Array.isArray(formData.allergens) ? formData.allergens : []
+    };
+    
+    handleSaveProduct(finalData);
     onClose();
   };
   
@@ -123,6 +149,10 @@ const ProductModal = ({ onClose, product, categories }) => {
   // Calcular margen y porcentaje
   const margin = formData.price - formData.cost;
   const marginPercentage = formData.price > 0 ? (margin / formData.price) * 100 : 0;
+
+  // Asegurarse de que ingredients y allergens sean arrays
+  const safeIngredients = Array.isArray(formData.ingredients) ? formData.ingredients : [];
+  const safeAllergens = Array.isArray(formData.allergens) ? formData.allergens : [];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -191,7 +221,7 @@ const ProductModal = ({ onClose, product, categories }) => {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Precio (€)
+                Precio ()
               </label>
               <input
                 type="number"
@@ -207,7 +237,7 @@ const ProductModal = ({ onClose, product, categories }) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Coste (€)
+                Coste ()
               </label>
               <input
                 type="number"
@@ -266,7 +296,7 @@ const ProductModal = ({ onClose, product, categories }) => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Margen</p>
-                  <p className="text-sm font-medium">{margin.toFixed(2)} €</p>
+                  <p className="text-sm font-medium">{margin} </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Porcentaje</p>
@@ -312,7 +342,7 @@ const ProductModal = ({ onClose, product, categories }) => {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {formData.ingredients?.map((ingredient, index) => (
+              {safeIngredients.map((ingredient, index) => (
                 <div 
                   key={index} 
                   className="bg-gray-100 px-3 py-1 rounded-full flex items-center text-sm"
@@ -327,7 +357,7 @@ const ProductModal = ({ onClose, product, categories }) => {
                   </button>
                 </div>
               ))}
-              {(!formData.ingredients || formData.ingredients.length === 0) && (
+              {safeIngredients.length === 0 && (
                 <p className="text-sm text-gray-500">No hay ingredientes</p>
               )}
             </div>
@@ -355,7 +385,7 @@ const ProductModal = ({ onClose, product, categories }) => {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {formData.allergens?.map((allergen, index) => (
+              {safeAllergens.map((allergen, index) => (
                 <div 
                   key={index} 
                   className="bg-red-100 text-red-800 px-3 py-1 rounded-full flex items-center text-sm"
@@ -370,7 +400,7 @@ const ProductModal = ({ onClose, product, categories }) => {
                   </button>
                 </div>
               ))}
-              {(!formData.allergens || formData.allergens.length === 0) && (
+              {safeAllergens.length === 0 && (
                 <p className="text-sm text-gray-500">No hay alérgenos</p>
               )}
             </div>

@@ -1,343 +1,218 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import woocommerceService from '../services/woocommerceService';
+import { appToWooOrder, wooToAppOrder } from '../utils/orderAdapter';
 
 /**
- * Hook para gestionar pedidos de WooCommerce
- * @param {Function} onTableStatusChange - Callback para cambios de estado de mesa
- * @returns {Object} - Métodos y estados para gestionar pedidos
+ * Custom hook para manejar órdenes de WooCommerce
+ * @param {Function} onTableStatusChange - Callback para cuando cambia el estado de una mesa
+ * @returns {Object} - Funciones y estado para manejar órdenes
  */
-const useWooOrders = (onTableStatusChange = () => {}) => {
+const useWooOrders = (onTableStatusChange) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [activeOrder, setActiveOrder] = useState(null);
   
   /**
-   * Cargar pedidos desde la API de WooCommerce
+   * Cargar órdenes desde WooCommerce
    * @param {Object} params - Parámetros de consulta
+   * @returns {Promise<Array>} - Órdenes convertidas al formato de la aplicación
    */
   const loadOrders = async (params = {}) => {
     setLoading(true);
     setError(null);
     
     try {
-      const data = await woocommerceService.orders.getOrders({
-        ...params,
-        status: params.status || ['processing', 'on-hold', 'completed'],
-        per_page: 100
-      });
+      const wooOrders = await woocommerceService.orders.getOrders(params);
       
-      // Transformar los datos de WooCommerce al formato de nuestra aplicación
-      const transformedOrders = data.map(item => {
-        // Extraer el ID de la mesa de los metadatos
-        const tableId = parseInt(item.meta_data?.find(meta => meta.key === '_table_id')?.value || 0);
-        
-        // Mapear estado de WooCommerce a estados de nuestra aplicación
-        let status;
-        switch (item.status) {
-          case 'processing':
-            status = 'en curso';
-            break;
-          case 'on-hold':
-            status = 'pagando';
-            break;
-          case 'completed':
-            status = 'pagado';
-            break;
-          default:
-            status = 'en curso';
-        }
-        
-        // Transformar productos a formato de nuestra aplicación
-        const items = item.line_items.map(lineItem => ({
-          productId: lineItem.product_id,
-          name: lineItem.name,
-          quantity: lineItem.quantity,
-          price: parseFloat(lineItem.price),
-          status: lineItem.meta_data?.find(meta => meta.key === '_item_status')?.value || 'pendiente'
-        }));
-        
-        return {
-          id: item.id,
-          tableId: tableId,
-          items: items,
-          status: status,
-          createdAt: item.date_created,
-          updatedAt: item.date_modified,
-          customerName: `${item.billing.first_name} ${item.billing.last_name}`,
-          customerEmail: item.billing.email,
-          customerPhone: item.billing.phone,
-          totalAmount: parseFloat(item.total)
-        };
-      });
+      // Convertir órdenes al formato de la aplicación
+      const appOrders = wooOrders.map(wooToAppOrder);
       
-      setOrders(transformedOrders);
-    } catch (err) {
-      setError(err.message);
-      console.error('Error cargando pedidos:', err);
+      setOrders(appOrders);
+      return appOrders;
+    } catch (error) {
+      console.error('Error loading orders from WooCommerce:', error);
+      setError(error.message || 'Error loading orders');
+      return [];
     } finally {
       setLoading(false);
     }
   };
   
   /**
-   * Crear un nuevo pedido en WooCommerce
-   * @param {Object} orderData - Datos del pedido
-   * @returns {Promise} - Promesa con el pedido creado
+   * Crear una nueva orden en WooCommerce
+   * @param {Object} orderData - Datos de la orden en formato de la aplicación
+   * @returns {Promise<Object>} - Orden creada en formato de la aplicación
    */
   const createOrder = async (orderData) => {
     setLoading(true);
     setError(null);
     
     try {
-      // Preparar líneas de productos para WooCommerce
-      const line_items = orderData.items.map(item => ({
-        product_id: item.productId,
-        quantity: item.quantity,
-        meta_data: [
-          { key: '_item_status', value: item.status || 'pendiente' }
-        ]
-      }));
+      // Convertir al formato WooCommerce
+      const wooOrderData = appToWooOrder(orderData);
       
-      // Preparar datos para WooCommerce
-      const wooOrder = {
-        status: 'processing',
-        meta_data: [
-          { key: '_table_id', value: orderData.tableId.toString() }
-        ],
-        line_items: line_items,
-        // Datos de cliente dummy (requeridos por WooCommerce)
-        billing: {
-          first_name: 'Cliente',
-          last_name: 'Mesa',
-          address_1: 'Restaurante',
-          city: 'Ciudad',
-          postcode: '00000',
-          country: 'ES',
-          email: 'cliente@restaurante.com',
-          phone: '000000000'
-        }
-      };
+      // Enviar a WooCommerce
+      const createdWooOrder = await woocommerceService.orders.createOrder(wooOrderData);
       
-      // Crear pedido en WooCommerce
-      const result = await woocommerceService.orders.createOrder(wooOrder);
-      
-      // Transformar respuesta al formato de nuestra aplicación
-      const transformedOrder = {
-        id: result.id,
-        tableId: orderData.tableId,
-        items: orderData.items,
-        status: 'en curso',
-        createdAt: result.date_created,
-        updatedAt: result.date_modified,
-        customerName: `${result.billing.first_name} ${result.billing.last_name}`,
-        customerEmail: result.billing.email,
-        customerPhone: result.billing.phone,
-        totalAmount: parseFloat(result.total)
-      };
+      // Convertir la respuesta al formato de la aplicación
+      const createdAppOrder = wooToAppOrder(createdWooOrder);
       
       // Actualizar estado local
-      setOrders(prevOrders => [...prevOrders, transformedOrder]);
+      setOrders(prev => [...prev, createdAppOrder]);
       
-      // Si la mesa estaba libre, notificar el cambio de estado
-      if (orderData.tableId) {
-        onTableStatusChange(orderData.tableId, 'ocupada');
-      }
-      
-      return transformedOrder;
-    } catch (err) {
-      setError(err.message);
-      console.error('Error creando pedido:', err);
-      throw err;
+      return createdAppOrder;
+    } catch (error) {
+      console.error('Error creating order in WooCommerce:', error);
+      setError(error.message || 'Error creating order');
+      throw error;
     } finally {
       setLoading(false);
     }
   };
   
   /**
-   * Actualizar un pedido existente en WooCommerce
-   * @param {number} orderId - ID del pedido
-   * @param {Object} orderData - Nuevos datos para el pedido
-   * @returns {Promise} - Promesa con el pedido actualizado
+   * Actualizar una orden existente en WooCommerce
+   * @param {number} orderId - ID de la orden
+   * @param {Object} orderData - Datos actualizados en formato de la aplicación
+   * @returns {Promise<Object>} - Orden actualizada en formato de la aplicación
    */
   const updateOrder = async (orderId, orderData) => {
     setLoading(true);
     setError(null);
     
     try {
-      // Obtener pedido actual para mantener los datos que no cambian
-      const currentOrder = orders.find(o => o.id === orderId);
-      if (!currentOrder) {
-        throw new Error('Pedido no encontrado');
-      }
+      // Convertir al formato WooCommerce
+      const wooOrderData = appToWooOrder({ ...orderData, id: orderId });
       
-      // Mapear estado de nuestra aplicación a estados de WooCommerce
-      let status;
-      switch (orderData.status || currentOrder.status) {
-        case 'en curso':
-          status = 'processing';
-          break;
-        case 'pagando':
-          status = 'on-hold';
-          break;
-        case 'pagado':
-          status = 'completed';
-          break;
-        default:
-          status = 'processing';
-      }
+      // Enviar a WooCommerce
+      const updatedWooOrder = await woocommerceService.orders.updateOrder(orderId, wooOrderData);
       
-      // Preparar líneas de productos para WooCommerce (si hay cambios)
-      const line_items = orderData.items ? orderData.items.map(item => ({
-        product_id: item.productId,
-        quantity: item.quantity,
-        meta_data: [
-          { key: '_item_status', value: item.status || 'pendiente' }
-        ]
-      })) : undefined;
-      
-      // Preparar datos para actualizar en WooCommerce
-      const wooOrder = {
-        status: status,
-        line_items: line_items
-      };
-      
-      // Actualizar pedido en WooCommerce
-      const result = await woocommerceService.orders.updateOrder(orderId, wooOrder);
-      
-      // Transformar respuesta al formato de nuestra aplicación
-      const transformedOrder = {
-        ...currentOrder,
-        ...orderData,
-        updatedAt: result.date_modified
-      };
+      // Convertir la respuesta al formato de la aplicación
+      const updatedAppOrder = wooToAppOrder(updatedWooOrder);
       
       // Actualizar estado local
-      setOrders(prevOrders => prevOrders.map(o => o.id === orderId ? transformedOrder : o));
+      setOrders(prev => prev.map(order => 
+        order.id === orderId ? updatedAppOrder : order
+      ));
       
-      // Si se ha cambiado el estado a pagado, actualizar estado de la mesa
-      if (orderData.status === 'pagado') {
-        const unpaidOrders = orders.filter(
-          o => o.tableId === currentOrder.tableId && o.id !== orderId && o.status !== 'pagado'
-        );
-        
-        if (unpaidOrders.length === 0) {
-          onTableStatusChange(currentOrder.tableId, 'pagando');
-        }
-      }
-      
-      return transformedOrder;
-    } catch (err) {
-      setError(err.message);
-      console.error('Error actualizando pedido:', err);
-      throw err;
+      return updatedAppOrder;
+    } catch (error) {
+      console.error('Error updating order in WooCommerce:', error);
+      setError(error.message || 'Error updating order');
+      throw error;
     } finally {
       setLoading(false);
     }
   };
   
   /**
-   * Eliminar un pedido de WooCommerce
-   * @param {number} orderId - ID del pedido
-   * @returns {Promise} - Promesa con el resultado
+   * Eliminar una orden de WooCommerce
+   * @param {number} orderId - ID de la orden
+   * @returns {Promise<boolean>} - Éxito de la operación
    */
   const deleteOrder = async (orderId) => {
     setLoading(true);
     setError(null);
     
     try {
-      // Obtener el pedido para saber qué mesa actualizar
-      const orderToDelete = orders.find(o => o.id === orderId);
-      const tableId = orderToDelete?.tableId;
-      
-      // Eliminar en WooCommerce (realmente cambiar a cancelado)
-      await woocommerceService.orders.updateOrder(orderId, { status: 'cancelled' });
+      // Enviar a WooCommerce
+      await woocommerceService.orders.deleteOrder(orderId);
       
       // Actualizar estado local
-      setOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
+      setOrders(prev => prev.filter(order => order.id !== orderId));
       
-      // Si no quedan pedidos para esta mesa, actualizar estado
-      if (tableId) {
-        const remainingOrders = orders.filter(
-          o => o.tableId === tableId && o.id !== orderId
-        );
-        
-        if (remainingOrders.length === 0) {
-          onTableStatusChange(tableId, 'libre');
-        }
-      }
-      
-      return { success: true };
-    } catch (err) {
-      setError(err.message);
-      console.error('Error eliminando pedido:', err);
-      throw err;
+      return true;
+    } catch (error) {
+      console.error('Error deleting order from WooCommerce:', error);
+      setError(error.message || 'Error deleting order');
+      throw error;
     } finally {
       setLoading(false);
     }
   };
   
   /**
-   * Actualizar el estado de un item del pedido
-   * @param {number} orderId - ID del pedido
-   * @param {number} itemIndex - Índice del item en el array
-   * @param {string} newStatus - Nuevo estado del item
-   * @returns {Promise} - Promesa con el pedido actualizado
+   * Actualizar el estado de un ítem en una orden
+   * @param {number} orderId - ID de la orden
+   * @param {number} itemIndex - Índice del ítem en la orden
+   * @param {string} newStatus - Nuevo estado
+   * @returns {Promise<Object>} - Orden actualizada
    */
   const updateItemStatus = async (orderId, itemIndex, newStatus) => {
-    // Obtener pedido actual
+    // Buscar la orden
     const order = orders.find(o => o.id === orderId);
-    if (!order || !order.items[itemIndex]) {
-      throw new Error('Pedido o item no encontrado');
-    }
+    if (!order) throw new Error('Order not found');
     
-    // Crear copia de los items con el nuevo estado
-    const updatedItems = [...order.items];
-    updatedItems[itemIndex] = { ...updatedItems[itemIndex], status: newStatus };
+    // Actualizar el estado del ítem
+    const updatedItems = order.items.map((item, idx) => 
+      idx === itemIndex ? { ...item, status: newStatus } : item
+    );
     
-    // Actualizar el pedido con los nuevos items
-    return updateOrder(orderId, { items: updatedItems });
+    // Crear una nueva orden con los ítems actualizados
+    const updatedOrder = {
+      ...order,
+      items: updatedItems,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Actualizar en WooCommerce
+    return updateOrder(orderId, updatedOrder);
   };
   
   /**
-   * Marcar un pedido como pagado
-   * @param {number} orderId - ID del pedido
-   * @returns {Promise} - Promesa con el pedido actualizado
+   * Marcar una orden como pagada
+   * @param {number} orderId - ID de la orden
+   * @returns {Promise<Object>} - Orden actualizada
    */
   const payOrder = async (orderId) => {
-    return updateOrder(orderId, { status: 'pagado' });
+    // Buscar la orden
+    const order = orders.find(o => o.id === orderId);
+    if (!order) throw new Error('Order not found');
+    
+    // Actualizar estado a pagado
+    const updatedOrder = {
+      ...order,
+      status: 'pagado',
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Si hay un callback, notificar cambio de estado de mesa
+    if (onTableStatusChange && order.tableId) {
+      onTableStatusChange(order.tableId, 'pagando');
+    }
+    
+    // Actualizar en WooCommerce
+    return updateOrder(orderId, updatedOrder);
   };
   
   /**
-   * Obtener pedidos para una mesa específica
+   * Obtener órdenes por ID de mesa
    * @param {number} tableId - ID de la mesa
-   * @returns {Array} - Array de pedidos de la mesa
+   * @returns {Array} - Órdenes de la mesa
    */
   const getOrdersByTable = (tableId) => {
     return orders.filter(order => order.tableId === tableId);
   };
   
   /**
-   * Calcular total para todos los pedidos de una mesa
+   * Calcular total para una mesa específica
    * @param {number} tableId - ID de la mesa
-   * @returns {number} - Total calculado
+   * @returns {number} - Total en euros
    */
   const calculateTableTotal = (tableId) => {
     const tableOrders = getOrdersByTable(tableId);
-    return tableOrders.reduce((total, order) => total + order.totalAmount, 0);
+    
+    return tableOrders.reduce((total, order) => {
+      return total + order.items.reduce((itemsTotal, item) => {
+        return itemsTotal + (item.price * item.quantity);
+      }, 0);
+    }, 0);
   };
-  
-  // Cargar pedidos al inicializar
-  useEffect(() => {
-    loadOrders();
-  }, []);
   
   return {
     orders,
     loading,
     error,
-    activeOrder,
-    setActiveOrder,
     loadOrders,
     createOrder,
     updateOrder,
@@ -347,7 +222,6 @@ const useWooOrders = (onTableStatusChange = () => {}) => {
     getOrdersByTable,
     calculateTableTotal
   };
-};
+}
 
 export default useWooOrders;
-  

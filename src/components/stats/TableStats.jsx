@@ -93,7 +93,7 @@ const TableStats = ({ orders, tables, dateRange }) => {
             <div>
               <p className="text-sm text-gray-500 mb-1">Venta Media por Mesa</p>
               <p className="text-3xl font-bold">
-                {(totalSales / Math.max(1, tablesWithOrders)).toFixed(2)} €
+                {(totalSales / Math.max(1, tablesWithOrders))} 
               </p>
             </div>
             <div className="p-3 rounded-full bg-green-100 text-green-600">
@@ -101,7 +101,7 @@ const TableStats = ({ orders, tables, dateRange }) => {
             </div>
           </div>
           <p className="mt-2 text-sm text-gray-500">
-            {totalSales.toFixed(2)} € en total
+            {totalSales}  en total
           </p>
         </div>
         
@@ -230,7 +230,7 @@ const TableStats = ({ orders, tables, dateRange }) => {
                       </div>
                     </td>
                     <td className="py-2 text-sm text-center">{table.orders}</td>
-                    <td className="py-2 text-sm text-right font-medium">{table.totalSales.toFixed(2)} €</td>
+                    <td className="py-2 text-sm text-right font-medium">{table.totalSales} </td>
                   </tr>
                 ))}
                 {topTables.length === 0 && (
@@ -272,7 +272,7 @@ const TableStats = ({ orders, tables, dateRange }) => {
                       </div>
                     </td>
                     <td className="py-2 text-sm text-center">{table.orders}</td>
-                    <td className="py-2 text-sm text-right font-medium">{table.avgSalePerOrder.toFixed(2)} €</td>
+                    <td className="py-2 text-sm text-right font-medium">{table.avgSalePerOrder} </td>
                   </tr>
                 ))}
                 {topOrderTables.length === 0 && (
@@ -322,8 +322,8 @@ const TableStats = ({ orders, tables, dateRange }) => {
                     <td className="py-2 text-sm text-center">{totalTablesOfSize}</td>
                     <td className="py-2 text-sm text-center">{totalOrdersOfSize}</td>
                     <td className="py-2 text-sm text-center">{totalItemsOfSize}</td>
-                    <td className="py-2 text-sm text-right">{totalSalesOfSize.toFixed(2)} €</td>
-                    <td className="py-2 text-sm text-right font-medium">{avgSaleOfSize.toFixed(2)} €</td>
+                    <td className="py-2 text-sm text-right">{totalSalesOfSize} </td>
+                    <td className="py-2 text-sm text-right font-medium">{avgSaleOfSize} </td>
                   </tr>
                 );
               })}

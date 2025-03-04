@@ -53,7 +53,7 @@ const SalonStats = () => {
         <div className="border rounded-lg p-4">
           <p className="text-gray-500 text-sm">Total Ventas</p>
           <p className="text-xl font-semibold mt-1">
-            {salonStats.totalRevenue.toFixed(2)} €
+            {salonStats.totalRevenue} 
           </p>
         </div>
       </div>

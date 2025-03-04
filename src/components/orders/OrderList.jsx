@@ -110,7 +110,7 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
-                    {calculateOrderTotal(order).toFixed(2)} €
+                    {calculateOrderTotal(order)} 
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -177,7 +177,7 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
                 <p className="text-sm text-gray-500">{tableOrders.length} pedidos</p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-semibold">{totalAmount.toFixed(2)} €</p>
+                <p className="text-lg font-semibold">{totalAmount} </p>
                 <p className="text-xs text-gray-500">
                   Actualizado {formatRelativeTime(latestOrder.updatedAt)}
                 </p>
@@ -197,7 +197,7 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
                       </span>
                     </div>
                     <span className="text-sm font-medium">
-                      {calculateOrderTotal(order).toFixed(2)} €
+                      {calculateOrderTotal(order)} 
                     </span>
                   </div>
                   
@@ -208,7 +208,7 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
                           {item.quantity}x {item.name}
                         </span>
                         <span className="text-gray-500">
-                          {(item.price * item.quantity).toFixed(2)} €
+                          {(item.price * item.quantity)} 
                         </span>
                       </div>
                     ))}

@@ -179,7 +179,7 @@ const StatsView = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Total de Ventas</p>
-                  <p className="text-3xl font-bold">{stats.totalSales.toFixed(2)} €</p>
+                  <p className="text-3xl font-bold">{stats.totalSales} </p>
                 </div>
                 <div className="p-3 rounded-full bg-green-100 text-green-600">
                   <DollarSign size={24} />
@@ -203,7 +203,7 @@ const StatsView = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Ticket Promedio</p>
-                  <p className="text-3xl font-bold">{stats.averageOrderValue.toFixed(2)} €</p>
+                  <p className="text-3xl font-bold">{stats.averageOrderValue} </p>
                 </div>
                 <div className="p-3 rounded-full bg-blue-100 text-blue-600">
                   <Users size={24} />
@@ -263,7 +263,7 @@ const StatsView = () => {
                     <tr key={product.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 text-sm">{product.name}</td>
                       <td className="py-3 text-sm text-center">{product.quantity} uds.</td>
-                      <td className="py-3 text-sm text-right font-medium">{product.revenue.toFixed(2)} €</td>
+                      <td className="py-3 text-sm text-right font-medium">{product.revenue} </td>
                     </tr>
                   ))}
                   {stats.topProducts.length === 0 && (

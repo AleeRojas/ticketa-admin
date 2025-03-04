@@ -79,7 +79,7 @@ const TableContextMenu = () => {
           
           {orderCount > 0 && (
             <div className="px-3 py-1 text-xs text-gray-500">
-              Total: <span className="font-medium">{getTableTotal(table.id).toFixed(2)} €</span>
+              Total: <span className="font-medium">{getTableTotal(table.id)} </span>
             </div>
           )}
         </div>

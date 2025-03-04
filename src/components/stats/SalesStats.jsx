@@ -64,7 +64,7 @@ const SalesStats = ({ orders, dateRange }) => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm text-gray-500 mb-1">Ventas Totales</p>
-              <p className="text-3xl font-bold">{totalSales.toFixed(2)} €</p>
+              <p className="text-3xl font-bold">{totalSales} </p>
             </div>
             <div className="p-3 rounded-full bg-green-100 text-green-600">
               <DollarSign size={24} />
@@ -82,7 +82,7 @@ const SalesStats = ({ orders, dateRange }) => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm text-gray-500 mb-1">Ticket Promedio</p>
-              <p className="text-3xl font-bold">{averageOrderValue.toFixed(2)} €</p>
+              <p className="text-3xl font-bold">{averageOrderValue} </p>
             </div>
             <div className="p-3 rounded-full bg-blue-100 text-blue-600">
               <Users size={24} />
@@ -119,7 +119,7 @@ const SalesStats = ({ orders, dateRange }) => {
             </div>
           </div>
           <p className="mt-2 text-sm text-gray-500">
-            {peakSales.toFixed(2)} € en ventas
+            {peakSales}  en ventas
           </p>
         </div>
       </div>
@@ -166,7 +166,7 @@ const SalesStats = ({ orders, dateRange }) => {
                   </div>
                   <span className="font-medium">{payment.method}</span>
                 </div>
-                <span className="text-gray-900 font-medium">{payment.amount.toFixed(2)} €</span>
+                <span className="text-gray-900 font-medium">{payment.amount} </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 

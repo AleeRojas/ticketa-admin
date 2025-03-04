@@ -86,7 +86,7 @@ const SchematicTableLayout = () => {
             {orderCount > 0 && (
               <div className="mt-2 text-right">
                 <span className="bg-white bg-opacity-20 text-white px-2 py-1 rounded text-xs font-medium">
-                  {getTableTotal(table.id).toFixed(2)} €
+                  {getTableTotal(table.id)} 
                 </span>
               </div>
             )}

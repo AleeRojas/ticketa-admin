@@ -11,7 +11,7 @@ import ProductModal from '../modals/ProductModal';
 const ProductsView = () => {
   const { 
     products, 
-    productCategories
+    categories  // Changed from productCategories to categories to match AppContext
   } = useAppContext();
   
   // Estados locales
@@ -37,7 +37,7 @@ const ProductsView = () => {
   // Estadísticas básicas
   const stats = {
     total: products.length,
-    categories: productCategories.length,
+    categories: categories.length,  // Changed from productCategories to categories
     filtered: filteredProducts.length
   };
   
@@ -91,7 +91,7 @@ const ProductsView = () => {
       {/* Filtros de categoría */}
       <div className="mb-6">
         <ProductCategoryFilter 
-          categories={productCategories}
+          categories={categories}  // Changed from productCategories to categories
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
         />
@@ -116,7 +116,7 @@ const ProductsView = () => {
       {/* Lista de productos */}
       <ProductList 
         products={filteredProducts} 
-        categories={productCategories}
+        categories={categories}  // Changed from productCategories to categories
         onEditProduct={handleEditProduct}
       />
       
@@ -125,7 +125,7 @@ const ProductsView = () => {
         <ProductModal
           onClose={() => setShowProductModal(false)}
           product={editingProduct}
-          categories={productCategories}
+          categories={categories}  // Changed from productCategories to categories
         />
       )}
     </div>

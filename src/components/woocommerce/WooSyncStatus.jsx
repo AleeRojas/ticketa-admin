@@ -56,7 +56,7 @@ const WooSyncStatus = () => {
     <div className="bg-white rounded-lg shadow p-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <h3 className="font-medium">Sincronización WooCommerce</h3>
+          <h3 className="font-medium">Sincronización</h3>
           {connectionStatus === true && (
             <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full flex items-center">
               <Check size={12} className="mr-1" />

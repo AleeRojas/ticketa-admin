@@ -63,10 +63,10 @@ const ProductList = ({ products, categories, onEditProduct }) => {
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900 font-medium">{product.price.toFixed(2)} €</div>
+                <div className="text-sm text-gray-900 font-medium">{product.price} </div>
                 {product.cost && (
                   <div className="text-xs text-gray-500">
-                    Coste: {product.cost.toFixed(2)} € 
+                    Coste: {product.cost}  
                     <span className="ml-1 text-emerald-600">
                       ({(((product.price - product.cost) / product.price) * 100).toFixed(0)}% margen)
                     </span>

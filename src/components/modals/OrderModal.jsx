@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, ClipboardList, CreditCard, Trash, Printer, Plus, Minus } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
-import { getOrderStatusColor, getItemStatusColor } from '../../utils/statusHelpers';
+import useOrderOperations from '../../hooks/useOrderOperations';
 
 /**
  * Modal para gestionar pedidos de una mesa
@@ -13,11 +13,16 @@ const OrderModal = () => {
     activeOrderTable, 
     getTableOrders,
     products,
-    productCategories,
-    handleSaveOrder,
-    handleDeleteOrder,
-    handlePayOrder
+    categories, // Cambiado de productCategories a categories
   } = useAppContext();
+  
+  // Usar el hook de operaciones de pedidos
+  const {
+    saveOrder,
+    deleteOrder,
+    payOrder,
+    updateItemStatus
+  } = useOrderOperations();
   
   // Si no hay tabla activa, no mostrar nada
   if (!activeOrderTable) return null;
@@ -28,7 +33,7 @@ const OrderModal = () => {
   // Estado local
   const [activeTab, setActiveTab] = useState(orders.length > 0 ? 'current' : 'new');
   const [activeOrder, setActiveOrder] = useState(orders.length > 0 ? orders[0] : null);
-  const [activeCategory, setActiveCategory] = useState(productCategories[0]?.id);
+  const [activeCategory, setActiveCategory] = useState(categories[0]?.id);
   const [newOrderItems, setNewOrderItems] = useState([]);
   
   // Filtrar productos por categoría
@@ -94,14 +99,14 @@ const OrderModal = () => {
       updatedAt: new Date().toISOString()
     };
     
-    handleSaveOrder(newOrder);
+    saveOrder(newOrder);
     setNewOrderItems([]);
     setActiveTab('current');
     setShowOrderModal(false);
   };
   
   // Actualizar estado de un producto en el pedido
-  const updateItemStatus = (itemIndex, newStatus) => {
+  const handleUpdateItemStatus = (itemIndex, newStatus) => {
     if (!activeOrder) return;
     
     const updatedItems = activeOrder.items.map((item, idx) => 
@@ -114,7 +119,7 @@ const OrderModal = () => {
       updatedAt: new Date().toISOString()
     };
     
-    handleSaveOrder(updatedOrder, activeOrder.id);
+    saveOrder(updatedOrder, activeOrder.id);
     setActiveOrder(updatedOrder);
   };
   
@@ -168,7 +173,7 @@ const OrderModal = () => {
                 {order.items.length} productos
               </div>
               <div className="text-sm font-medium mt-1">
-                {calculateTotal(order.items).toFixed(2)} €
+                {calculateTotal(order.items)} 
               </div>
             </div>
           ))}
@@ -188,14 +193,19 @@ const OrderModal = () => {
                 {activeOrder.status !== 'pagado' && (
                   <>
                     <button
-                      onClick={() => handlePayOrder(activeOrder.id)}
+                      onClick={() => payOrder(activeOrder.id)}
                       className="bg-emerald-600 text-white rounded-md px-3 py-1.5 text-sm font-medium hover:bg-emerald-700 flex items-center"
                     >
                       <CreditCard size={14} className="mr-1" />
                       Pagar
                     </button>
                     <button
-                      onClick={() => handleDeleteOrder(activeOrder.id)}
+                      onClick={() => {
+                        if (confirm('¿Está seguro de que desea eliminar este pedido?')) {
+                          deleteOrder(activeOrder.id);
+                          setActiveOrder(null);
+                        }
+                      }}
                       className="bg-red-600 text-white rounded-md px-3 py-1.5 text-sm font-medium hover:bg-red-700 flex items-center"
                     >
                       <Trash size={14} className="mr-1" />
@@ -232,8 +242,8 @@ const OrderModal = () => {
                       <td className="py-3 text-sm font-medium">{item.name}</td>
                       <td className="py-3 text-center">
                         <select
-                          value={item.status}
-                          onChange={(e) => updateItemStatus(idx, e.target.value)}
+                          value={item.status || 'pendiente'}
+                          onChange={(e) => handleUpdateItemStatus(idx, e.target.value)}
                           className={`text-xs rounded px-2 py-1 font-medium border ${
                             item.status === 'pendiente' ? 'bg-gray-100 text-gray-700' :
                             item.status === 'preparando' ? 'bg-amber-100 text-amber-700' :
@@ -248,15 +258,15 @@ const OrderModal = () => {
                         </select>
                       </td>
                       <td className="py-3 text-center text-sm">{item.quantity}</td>
-                      <td className="py-3 text-right text-sm">{item.price.toFixed(2)} €</td>
-                      <td className="py-3 text-right text-sm font-medium">{(item.price * item.quantity).toFixed(2)} €</td>
+                      <td className="py-3 text-right text-sm">{item.price} </td>
+                      <td className="py-3 text-right text-sm font-medium">{(item.price * item.quantity)} </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-gray-300">
                     <td colSpan="4" className="py-3 text-right font-medium">Total</td>
-                    <td className="py-3 text-right font-bold">{calculateTotal(activeOrder.items).toFixed(2)} €</td>
+                    <td className="py-3 text-right font-bold">{calculateTotal(activeOrder.items)} </td>
                   </tr>
                 </tfoot>
               </table>
@@ -275,7 +285,7 @@ const OrderModal = () => {
         <div className="w-2/3 border-r flex flex-col">
           {/* Categorías */}
           <div className="border-b p-2 flex space-x-2 overflow-auto">
-            {productCategories.map(category => (
+            {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
@@ -301,11 +311,11 @@ const OrderModal = () => {
                 >
                   <div className="flex justify-between items-start">
                     <h4 className="font-medium">{product.name}</h4>
-                    <span className="text-sm font-bold">{product.price.toFixed(2)} €</span>
+                    <span className="text-sm font-bold">{product.price} </span>
                   </div>
                   <div className="mt-2 flex justify-between items-center">
                     <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">{
-                      productCategories.find(c => c.id === product.category)?.name
+                      categories.find(c => c.id === product.category)?.name
                     }</span>
                     <button className="text-indigo-600 hover:text-indigo-800">
                       <Plus size={16} />
@@ -338,10 +348,10 @@ const OrderModal = () => {
                   <div key={idx} className="flex justify-between items-center border-b pb-2">
                     <div>
                       <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-gray-500">{item.price.toFixed(2)} € × {item.quantity}</div>
+                      <div className="text-sm text-gray-500">{item.price}  × {item.quantity}</div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium">{(item.price * item.quantity).toFixed(2)} €</span>
+                      <span className="font-medium">{(item.price * item.quantity)} </span>
                       <button 
                         onClick={() => removeItemFromOrder(item.productId)}
                         className="text-red-600 hover:text-red-800"
@@ -358,7 +368,7 @@ const OrderModal = () => {
           <div className="border-t p-4 bg-gray-50">
             <div className="flex justify-between items-center mb-4">
               <span className="font-medium">Total</span>
-              <span className="text-xl font-bold">{calculateTotal(newOrderItems).toFixed(2)} €</span>
+              <span className="text-xl font-bold">{calculateTotal(newOrderItems)} </span>
             </div>
             <button
               onClick={createNewOrder}
