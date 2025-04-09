@@ -1,4 +1,4 @@
-// WooCommerceContext.jsx (Con persistencia y detección online/offline)
+// WooCommerceContext.jsx (Con corrección para paginación)
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import useWooProducts from '../hooks/useWooProducts';
@@ -96,6 +96,22 @@ export const WooCommerceProvider = ({ children }) => {
   const productManager = useWooProducts();
   const orderManager = useWooOrders(handleTableStatusChange);
   
+  // Estado de paginación para productos (NUEVA ADICIÓN)
+  const [productsPagination, setProductsPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    perPage: 10
+  });
+  
+  // Estado de paginación para pedidos (NUEVA ADICIÓN)
+  const [ordersPagination, setOrdersPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    perPage: 10
+  });
+  
   // Detectar estado de conexión a Internet
   useEffect(() => {
     const handleOnline = () => {
@@ -118,6 +134,22 @@ export const WooCommerceProvider = ({ children }) => {
       window.removeEventListener('offline', handleOffline);
     };
   }, [syncEnabled, syncing, pendingOperations]);
+  
+  // Sincronizar estado de paginación con productos
+  useEffect(() => {
+    if (productManager.pagination) {
+      console.log("WooCommerceContext - Actualizando paginación de productos:", productManager.pagination);
+      setProductsPagination(productManager.pagination);
+    }
+  }, [productManager.pagination]);
+  
+  // Sincronizar estado de paginación con pedidos
+  useEffect(() => {
+    if (orderManager.pagination) {
+      console.log("WooCommerceContext - Actualizando paginación de pedidos:", orderManager.pagination);
+      setOrdersPagination(orderManager.pagination);
+    }
+  }, [orderManager.pagination]);
   
   // Persistir cambios en localStorage
   useEffect(() => {
@@ -422,6 +454,43 @@ export const WooCommerceProvider = ({ children }) => {
     }
   }, [isOnline]);
   
+  // Funciones específicas para paginación (NUEVAS ADICIONES)
+  const changeProductsPage = async (page, additionalParams = {}) => {
+    console.log("WooCommerceContext - Cambiando página de productos a:", page);
+    try {
+      return await productManager.changePage(page, additionalParams);
+    } catch (error) {
+      console.error("Error al cambiar página de productos:", error);
+    }
+  };
+  
+  const changeOrdersPage = async (page, additionalParams = {}) => {
+    console.log("WooCommerceContext - Cambiando página de pedidos a:", page);
+    try {
+      return await orderManager.changePage(page, additionalParams);
+    } catch (error) {
+      console.error("Error al cambiar página de pedidos:", error);
+    }
+  };
+  
+  const changeProductsPerPage = async (perPage, additionalParams = {}) => {
+    console.log("WooCommerceContext - Cambiando productos por página a:", perPage);
+    try {
+      return await productManager.changePerPage(perPage, additionalParams);
+    } catch (error) {
+      console.error("Error al cambiar productos por página:", error);
+    }
+  };
+  
+  const changeOrdersPerPage = async (perPage, additionalParams = {}) => {
+    console.log("WooCommerceContext - Cambiando pedidos por página a:", perPage);
+    try {
+      return await orderManager.changePerPage(perPage, additionalParams);
+    } catch (error) {
+      console.error("Error al cambiar pedidos por página:", error);
+    }
+  };
+  
   const contextValue = {
     // Estado de sincronización
     syncEnabled,
@@ -448,6 +517,18 @@ export const WooCommerceProvider = ({ children }) => {
     products: productManager.products,
     categories: productManager.categories,
     orders: orderManager.orders,
+    
+    // Estados de paginación (NUEVOS)
+    pagination: productsPagination, // Para compatibilidad con código existente
+    productsPagination,
+    ordersPagination,
+    
+    // Funciones de paginación (NUEVAS)
+    changePage: changeProductsPage, // Para compatibilidad con código existente
+    changeProductsPage,
+    changeOrdersPage,
+    changeProductsPerPage,
+    changeOrdersPerPage,
     
     // Funciones de productos
     loadProducts: productManager.loadProducts,

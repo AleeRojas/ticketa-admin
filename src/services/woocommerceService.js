@@ -12,7 +12,7 @@ const CONSUMER_SECRET = import.meta.env.VITE_WOO_CONSUMER_SECRET || 'tu_consumer
  * @param {string} endpoint - Endpoint de la API
  * @param {string} method - Método HTTP (GET, POST, PUT, DELETE)
  * @param {Object} data - Datos para enviar (para POST y PUT)
- * @returns {Promise} - Promesa con la respuesta
+ * @returns {Promise} - Promesa con la respuesta y metadatos de paginación
  */
 const apiRequest = async (endpoint, method = 'GET', data = null) => {
   // Preparar URL con autenticación
@@ -36,6 +36,7 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
   }
   
   try {
+    console.log(`Realizando petición ${method} a: ${url.toString()}`);
     const response = await fetch(url, options);
     
     // Manejar errores HTTP
@@ -44,8 +45,38 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
       throw new Error(errorData.message || `Error HTTP: ${response.status}`);
     }
     
+    // Extraer información de paginación de los encabezados
+    // Nota: WooCommerce usa 'x-wp-total' y 'x-wp-totalpages' (minúsculas)
+    const totalItems = parseInt(response.headers.get('x-wp-total') || '0');
+    const totalPages = parseInt(response.headers.get('x-wp-totalpages') || '1');
+    
+    console.log('Cabeceras de paginación recibidas:', {
+      'x-wp-total': response.headers.get('x-wp-total'),
+      'x-wp-totalpages': response.headers.get('x-wp-totalpages')
+    });
+    
+    // Mostrar todas las cabeceras para debug
+    const headers = {};
+    response.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    console.log('Todas las cabeceras:', headers);
+    
+    const pagination = {
+      totalItems: totalItems,
+      totalPages: totalPages,
+    };
+    
     // Parsear respuesta como JSON
-    return await response.json();
+    const data = await response.json();
+    
+    console.log(`Datos recibidos: ${data.length} items, Paginación:`, pagination);
+    
+    // Devolver tanto los datos como la información de paginación
+    return {
+      data,
+      pagination
+    };
   } catch (error) {
     console.error('API Error:', error);
     throw error;
@@ -57,7 +88,7 @@ const productService = {
   /**
    * Obtener todos los productos
    * @param {Object} params - Parámetros de consulta (paginación, ordenación, etc.)
-   * @returns {Promise} - Promesa con la lista de productos
+   * @returns {Promise} - Promesa con la lista de productos y metadatos de paginación
    */
   getProducts: async (params = {}) => {
     const queryParams = new URLSearchParams();
@@ -67,6 +98,16 @@ const productService = {
       queryParams.append(key, params[key]);
     });
     
+    // Asegurarse de que la paginación esté incluida en la consulta
+    if (!params.page) {
+      queryParams.append('page', '1');
+    }
+    
+    if (!params.per_page) {
+      queryParams.append('per_page', '10');
+    }
+    
+    console.log('getProducts - Parámetros:', Object.fromEntries(queryParams.entries()));
     return apiRequest(`/products?${queryParams.toString()}`);
   },
   
@@ -76,7 +117,8 @@ const productService = {
    * @returns {Promise} - Promesa con el producto
    */
   getProduct: async (id) => {
-    return apiRequest(`/products/${id}`);
+    const response = await apiRequest(`/products/${id}`);
+    return response.data;
   },
   
   /**
@@ -85,7 +127,8 @@ const productService = {
    * @returns {Promise} - Promesa con el producto creado
    */
   createProduct: async (productData) => {
-    return apiRequest('/products', 'POST', productData);
+    const response = await apiRequest('/products', 'POST', productData);
+    return response.data;
   },
   
   /**
@@ -95,7 +138,8 @@ const productService = {
    * @returns {Promise} - Promesa con el producto actualizado
    */
   updateProduct: async (id, productData) => {
-    return apiRequest(`/products/${id}`, 'PUT', productData);
+    const response = await apiRequest(`/products/${id}`, 'PUT', productData);
+    return response.data;
   },
   
   /**
@@ -104,7 +148,8 @@ const productService = {
    * @returns {Promise} - Promesa con la confirmación
    */
   deleteProduct: async (id) => {
-    return apiRequest(`/products/${id}`, 'DELETE');
+    const response = await apiRequest(`/products/${id}`, 'DELETE');
+    return response.data;
   }
 };
 
@@ -113,7 +158,7 @@ const categoryService = {
   /**
    * Obtener todas las categorías
    * @param {Object} params - Parámetros de consulta
-   * @returns {Promise} - Promesa con la lista de categorías
+   * @returns {Promise} - Promesa con la lista de categorías y metadatos de paginación
    */
   getCategories: async (params = {}) => {
     const queryParams = new URLSearchParams();
@@ -121,6 +166,15 @@ const categoryService = {
     Object.keys(params).forEach(key => {
       queryParams.append(key, params[key]);
     });
+    
+    // Asegurarse de incluir parámetros de paginación
+    if (!params.page) {
+      queryParams.append('page', '1');
+    }
+    
+    if (!params.per_page) {
+      queryParams.append('per_page', '50');  // Mayor valor por defecto para categorías
+    }
     
     return apiRequest(`/products/categories?${queryParams.toString()}`);
   },
@@ -131,7 +185,8 @@ const categoryService = {
    * @returns {Promise} - Promesa con la categoría creada
    */
   createCategory: async (categoryData) => {
-    return apiRequest('/products/categories', 'POST', categoryData);
+    const response = await apiRequest('/products/categories', 'POST', categoryData);
+    return response.data;
   },
   
   /**
@@ -141,7 +196,8 @@ const categoryService = {
    * @returns {Promise} - Promesa con la categoría actualizada
    */
   updateCategory: async (id, categoryData) => {
-    return apiRequest(`/products/categories/${id}`, 'PUT', categoryData);
+    const response = await apiRequest(`/products/categories/${id}`, 'PUT', categoryData);
+    return response.data;
   },
   
   /**
@@ -150,7 +206,8 @@ const categoryService = {
    * @returns {Promise} - Promesa con la confirmación
    */
   deleteCategory: async (id) => {
-    return apiRequest(`/products/categories/${id}`, 'DELETE');
+    const response = await apiRequest(`/products/categories/${id}`, 'DELETE');
+    return response.data;
   }
 };
 
@@ -159,7 +216,7 @@ const orderService = {
   /**
    * Obtener todos los pedidos
    * @param {Object} params - Parámetros de consulta
-   * @returns {Promise} - Promesa con la lista de pedidos
+   * @returns {Promise} - Promesa con la lista de pedidos y metadatos de paginación
    */
   getOrders: async (params = {}) => {
     const queryParams = new URLSearchParams();
@@ -167,6 +224,15 @@ const orderService = {
     Object.keys(params).forEach(key => {
       queryParams.append(key, params[key]);
     });
+    
+    // Asegurarse de incluir parámetros de paginación
+    if (!params.page) {
+      queryParams.append('page', '1');
+    }
+    
+    if (!params.per_page) {
+      queryParams.append('per_page', '10');
+    }
     
     return apiRequest(`/orders?${queryParams.toString()}`);
   },
@@ -177,7 +243,8 @@ const orderService = {
    * @returns {Promise} - Promesa con el pedido
    */
   getOrder: async (id) => {
-    return apiRequest(`/orders/${id}`);
+    const response = await apiRequest(`/orders/${id}`);
+    return response.data;
   },
   
   /**
@@ -186,7 +253,8 @@ const orderService = {
    * @returns {Promise} - Promesa con el pedido creado
    */
   createOrder: async (orderData) => {
-    return apiRequest('/orders', 'POST', orderData);
+    const response = await apiRequest('/orders', 'POST', orderData);
+    return response.data;
   },
   
   /**
@@ -196,7 +264,8 @@ const orderService = {
    * @returns {Promise} - Promesa con el pedido actualizado
    */
   updateOrder: async (id, orderData) => {
-    return apiRequest(`/orders/${id}`, 'PUT', orderData);
+    const response = await apiRequest(`/orders/${id}`, 'PUT', orderData);
+    return response.data;
   },
   
   /**
@@ -205,7 +274,8 @@ const orderService = {
    * @returns {Promise} - Promesa con la confirmación
    */
   deleteOrder: async (id) => {
-    return apiRequest(`/orders/${id}`, 'DELETE');
+    const response = await apiRequest(`/orders/${id}`, 'DELETE');
+    return response.data;
   }
 };
 
@@ -214,7 +284,7 @@ const customerService = {
   /**
    * Obtener todos los clientes
    * @param {Object} params - Parámetros de consulta
-   * @returns {Promise} - Promesa con la lista de clientes
+   * @returns {Promise} - Promesa con la lista de clientes y metadatos de paginación
    */
   getCustomers: async (params = {}) => {
     const queryParams = new URLSearchParams();
@@ -222,6 +292,15 @@ const customerService = {
     Object.keys(params).forEach(key => {
       queryParams.append(key, params[key]);
     });
+    
+    // Asegurarse de incluir parámetros de paginación
+    if (!params.page) {
+      queryParams.append('page', '1');
+    }
+    
+    if (!params.per_page) {
+      queryParams.append('per_page', '10');
+    }
     
     return apiRequest(`/customers?${queryParams.toString()}`);
   },
@@ -232,7 +311,8 @@ const customerService = {
    * @returns {Promise} - Promesa con el cliente
    */
   getCustomer: async (id) => {
-    return apiRequest(`/customers/${id}`);
+    const response = await apiRequest(`/customers/${id}`);
+    return response.data;
   },
   
   /**
@@ -241,7 +321,8 @@ const customerService = {
    * @returns {Promise} - Promesa con el cliente creado
    */
   createCustomer: async (customerData) => {
-    return apiRequest('/customers', 'POST', customerData);
+    const response = await apiRequest('/customers', 'POST', customerData);
+    return response.data;
   },
   
   /**
@@ -251,7 +332,8 @@ const customerService = {
    * @returns {Promise} - Promesa con el cliente actualizado
    */
   updateCustomer: async (id, customerData) => {
-    return apiRequest(`/customers/${id}`, 'PUT', customerData);
+    const response = await apiRequest(`/customers/${id}`, 'PUT', customerData);
+    return response.data;
   }
 };
 

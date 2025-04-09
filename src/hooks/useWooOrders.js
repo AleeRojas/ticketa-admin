@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import woocommerceService from '../services/woocommerceService';
 import { appToWooOrder, wooToAppOrder } from '../utils/orderAdapter';
 
@@ -12,27 +12,60 @@ const useWooOrders = (onTableStatusChange) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
+  // Estado para paginación
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    perPage: 10
+  });
+  
   /**
    * Cargar órdenes desde WooCommerce
    * @param {Object} params - Parámetros de consulta
-   * @returns {Promise<Array>} - Órdenes convertidas al formato de la aplicación
+   * @returns {Promise<Object>} - Órdenes convertidas al formato de la aplicación y datos de paginación
    */
   const loadOrders = async (params = {}) => {
     setLoading(true);
     setError(null);
     
     try {
-      const wooOrders = await woocommerceService.orders.getOrders(params);
+      // Establecer valores por defecto para paginación
+      const queryParams = {
+        page: params.page || pagination.currentPage,
+        per_page: params.per_page || pagination.perPage,
+        ...params
+      };
+      
+      const response = await woocommerceService.orders.getOrders(queryParams);
       
       // Convertir órdenes al formato de la aplicación
-      const appOrders = wooOrders.map(wooToAppOrder);
+      const appOrders = response.data.map(wooToAppOrder);
       
+      // Actualizar estado con las órdenes
       setOrders(appOrders);
-      return appOrders;
+      
+      // Actualizar información de paginación
+      const updatedPagination = {
+        currentPage: parseInt(queryParams.page),
+        totalPages: response.pagination.totalPages,
+        totalItems: response.pagination.totalItems,
+        perPage: parseInt(queryParams.per_page)
+      };
+      
+      setPagination(updatedPagination);
+      
+      return {
+        orders: appOrders,
+        pagination: updatedPagination
+      };
     } catch (error) {
       console.error('Error loading orders from WooCommerce:', error);
       setError(error.message || 'Error loading orders');
-      return [];
+      return { 
+        orders: [], 
+        pagination: pagination 
+      };
     } finally {
       setLoading(false);
     }
@@ -209,10 +242,89 @@ const useWooOrders = (onTableStatusChange) => {
     }, 0);
   };
   
+  /**
+   * Cambiar de página en la paginación
+   * @param {number} page - Número de página
+   * @param {Object} filters - Filtros adicionales
+   */
+  const changePage = async (page, filters = {}) => {
+    return loadOrders({
+      page,
+      per_page: pagination.perPage,
+      ...filters
+    });
+  };
+  
+  /**
+   * Cambiar cantidad de items por página
+   * @param {number} perPage - Items por página
+   * @param {Object} filters - Filtros adicionales
+   */
+  const changePerPage = async (perPage, filters = {}) => {
+    return loadOrders({
+      page: 1, // Volver a la primera página al cambiar items por página
+      per_page: perPage,
+      ...filters
+    });
+  };
+  
+  /**
+   * Filtrar órdenes por estado
+   * @param {string} status - Estado a filtrar
+   */
+  const filterByStatus = async (status) => {
+    return loadOrders({
+      page: 1,
+      per_page: pagination.perPage,
+      status
+    });
+  };
+
+  /**
+   * Filtrar órdenes por fecha
+   * @param {string} after - Fecha de inicio (ISO 8601)
+   * @param {string} before - Fecha de fin (ISO 8601)
+   */
+  const filterByDate = async (after, before) => {
+    const filters = {};
+    
+    if (after) {
+      filters.after = after;
+    }
+    
+    if (before) {
+      filters.before = before;
+    }
+    
+    return loadOrders({
+      page: 1,
+      per_page: pagination.perPage,
+      ...filters
+    });
+  };
+
+  /**
+   * Buscar órdenes por texto
+   * @param {string} searchTerm - Término de búsqueda
+   */
+  const searchOrders = async (searchTerm) => {
+    return loadOrders({
+      page: 1,
+      per_page: pagination.perPage,
+      search: searchTerm
+    });
+  };
+  
+  // Cargar órdenes al inicializar el hook
+  useEffect(() => {
+    loadOrders();
+  }, []);
+  
   return {
     orders,
     loading,
     error,
+    pagination,
     loadOrders,
     createOrder,
     updateOrder,
@@ -220,8 +332,13 @@ const useWooOrders = (onTableStatusChange) => {
     updateItemStatus,
     payOrder,
     getOrdersByTable,
-    calculateTableTotal
+    calculateTableTotal,
+    changePage,
+    changePerPage,
+    filterByStatus,
+    filterByDate,
+    searchOrders
   };
-}
+};
 
 export default useWooOrders;

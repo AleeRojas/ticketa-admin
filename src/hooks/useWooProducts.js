@@ -11,6 +11,14 @@ const useWooProducts = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
+  // Estado para paginación
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    perPage: 10
+  });
+  
   /**
    * Cargar productos desde la API de WooCommerce
    * @param {Object} params - Parámetros de consulta
@@ -20,10 +28,25 @@ const useWooProducts = () => {
     setError(null);
     
     try {
-      const data = await woocommerceService.products.getProducts(params);
+      // Parámetros por defecto si no se especifican
+      const queryParams = {
+        page: params.page || pagination.currentPage,
+        per_page: params.per_page || pagination.perPage,
+        ...params
+      };
+      
+      console.log('loadProducts - Parámetros:', queryParams);
+      
+      // Solicitar datos a la API
+      const response = await woocommerceService.products.getProducts(queryParams);
+      
+      console.log('loadProducts - Respuesta recibida:', {
+        productos: response.data.length,
+        paginación: response.pagination
+      });
       
       // Transformar los datos de WooCommerce al formato de nuestra aplicación
-      const transformedProducts = data.map(item => ({
+      const transformedProducts = response.data.map(item => ({
         id: item.id,
         name: item.name,
         description: item.description,
@@ -35,13 +58,32 @@ const useWooProducts = () => {
         ingredients: item.meta_data?.find(meta => meta.key === '_ingredients')?.value || '',
         allergens: item.meta_data?.find(meta => meta.key === '_allergens')?.value || '',
         stock: item.stock_quantity,
-        image: item.images.length > 0 ? item.images[0].src : null
+        image: item.images.length > 0 ? item.images[0].src : null,
+        wooId: item.id // Guardar el ID de WooCommerce
       }));
       
+      // Actualizar estado con los productos
       setProducts(transformedProducts);
+      
+      // Actualizar información de paginación
+      const updatedPagination = {
+        currentPage: parseInt(queryParams.page),
+        totalPages: response.pagination.totalPages,
+        totalItems: response.pagination.totalItems,
+        perPage: parseInt(queryParams.per_page)
+      };
+      
+      console.log('loadProducts - Actualizando paginación a:', updatedPagination);
+      setPagination(updatedPagination);
+      
+      return {
+        products: transformedProducts,
+        pagination: updatedPagination
+      };
     } catch (err) {
-      setError(err.message);
       console.error('Error cargando productos:', err);
+      setError(err.message);
+      return { products: [], pagination: pagination };
     } finally {
       setLoading(false);
     }
@@ -56,10 +98,16 @@ const useWooProducts = () => {
     setError(null);
     
     try {
-      const data = await woocommerceService.categories.getCategories(params);
+      // Parámetros por defecto para categorías (cargar más por página)
+      const queryParams = {
+        per_page: 50,
+        ...params
+      };
+      
+      const response = await woocommerceService.categories.getCategories(queryParams);
       
       // Transformar los datos de WooCommerce al formato de nuestra aplicación
-      const transformedCategories = data.map(item => ({
+      const transformedCategories = response.data.map(item => ({
         id: item.id.toString(),
         name: item.name,
         description: item.description,
@@ -67,9 +115,11 @@ const useWooProducts = () => {
       }));
       
       setCategories(transformedCategories);
+      return transformedCategories;
     } catch (err) {
       setError(err.message);
       console.error('Error cargando categorías:', err);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -127,7 +177,8 @@ const useWooProducts = () => {
         ingredients: result.meta_data?.find(meta => meta.key === '_ingredients')?.value || '',
         allergens: result.meta_data?.find(meta => meta.key === '_allergens')?.value || '',
         stock: result.stock_quantity,
-        image: result.images.length > 0 ? result.images[0].src : null
+        image: result.images.length > 0 ? result.images[0].src : null,
+        wooId: result.id
       };
       
       // Actualizar estado local
@@ -258,6 +309,34 @@ const useWooProducts = () => {
     }
   };
   
+  /**
+   * Cambiar de página en la paginación
+   * @param {number} page - Número de página
+   * @param {Object} filters - Filtros adicionales
+   */
+  const changePage = async (page, filters = {}) => {
+    console.log('changePage - Cambiando a página:', page);
+    return loadProducts({
+      page,
+      per_page: pagination.perPage,
+      ...filters
+    });
+  };
+  
+  /**
+   * Cambiar cantidad de items por página
+   * @param {number} perPage - Items por página
+   * @param {Object} filters - Filtros adicionales
+   */
+  const changePerPage = async (perPage, filters = {}) => {
+    console.log('changePerPage - Cambiando a', perPage, 'ítems por página');
+    return loadProducts({
+      page: 1, // Volver a la primera página al cambiar items por página
+      per_page: perPage,
+      ...filters
+    });
+  };
+  
   // Cargar productos y categorías al inicializar
   useEffect(() => {
     loadProducts();
@@ -269,12 +348,15 @@ const useWooProducts = () => {
     categories,
     loading,
     error,
+    pagination,
     loadProducts,
     loadCategories,
     saveProduct,
     deleteProduct,
     saveCategory,
-    deleteCategory
+    deleteCategory,
+    changePage,
+    changePerPage
   };
 };
 

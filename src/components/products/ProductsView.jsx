@@ -5,10 +5,10 @@ import ProductList from './ProductList';
 import ProductCategoryFilter from './ProductCategoryFilter';
 import ProductModal from '../modals/ProductModal';
 import BulkEditModal from '../modals/BulkEditModal';
+import { useWooCommerceContext } from '../../context/WooCommerceContext';
 
 /**
- * Vista principal de productos mejorada con edición múltiple,
- * filtrado avanzado y paginación
+ * Vista principal de productos con paginación corregida
  */
 const ProductsView = () => {
   const { 
@@ -17,6 +17,14 @@ const ProductsView = () => {
     handleSaveProduct,
     handleDeleteProduct
   } = useAppContext();
+  
+  // Contexto de WooCommerce para usar loadProducts con paginación
+  const { 
+    loadProducts, 
+    changePage: wooChangePage,
+    pagination: wooPagination,
+    productsLoading 
+  } = useWooCommerceContext();
   
   // Estados locales
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,12 +40,22 @@ const ProductsView = () => {
   const [sortBy, setSortBy] = useState('name'); // 'name', 'price', 'category'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   
-  // Paginación
+  // Estados de paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   
-  // Efectos
+  // Sincronizar con paginación de WooCommerce
+  useEffect(() => {
+    if (wooPagination) {
+      console.log('ProductsView - Actualizando paginación:', wooPagination);
+      setCurrentPage(wooPagination.currentPage);
+      setTotalPages(wooPagination.totalPages);
+      setTotalItems(wooPagination.totalItems);
+      setItemsPerPage(wooPagination.perPage);
+    }
+  }, [wooPagination]);
   
   // Resetear selección cuando cambian los filtros
   useEffect(() => {
@@ -45,87 +63,132 @@ const ProductsView = () => {
     setSelectAll(false);
   }, [selectedCategory, searchTerm, priceRange, stockFilter]);
   
-  // Resetear paginación cuando cambian los filtros
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCategory, searchTerm, priceRange, stockFilter, itemsPerPage]);
-  
-  // Filtrado de productos
-  const filteredProducts = products.filter(product => {
-    // Filtro por búsqueda (nombre o descripción)
-    const matchesSearch = 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Construir parámetros para la API
+  const buildApiParams = () => {
+    const params = {
+      page: currentPage,
+      per_page: itemsPerPage
+    };
+    
+    // Filtro por búsqueda
+    if (searchTerm) {
+      params.search = searchTerm;
+    }
     
     // Filtro por categoría
-    const matchesCategory = 
-      selectedCategory === 'all' || product.category === selectedCategory;
-    
-    // Filtro por precio
-    const matchesPrice = 
-      (priceRange.min === '' || product.price >= parseFloat(priceRange.min)) && 
-      (priceRange.max === '' || product.price <= parseFloat(priceRange.max));
-    
-    // Filtro por disponibilidad
-    const matchesStock = 
-      stockFilter === 'all' || 
-      (stockFilter === 'available' && product.available !== false) || 
-      (stockFilter === 'unavailable' && product.available === false);
-    
-    return matchesSearch && matchesCategory && matchesPrice && matchesStock;
-  });
-  
-  // Ordenar productos
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    let compareA, compareB;
-    
-    // Determinar valores a comparar según criterio de ordenación
-    switch (sortBy) {
-      case 'price':
-        compareA = a.price || 0;
-        compareB = b.price || 0;
-        break;
-      case 'category':
-        const catA = categories.find(cat => cat.id === a.category);
-        const catB = categories.find(cat => cat.id === b.category);
-        compareA = catA ? catA.name : '';
-        compareB = catB ? catB.name : '';
-        break;
-      default: // 'name'
-        compareA = a.name;
-        compareB = b.name;
+    if (selectedCategory !== 'all') {
+      params.category = selectedCategory;
     }
     
-    // Comparar según orden seleccionado
-    if (sortOrder === 'asc') {
-      return compareA > compareB ? 1 : -1;
-    } else {
-      return compareA < compareB ? 1 : -1;
+    // Filtro por disponibilidad/estado
+    if (stockFilter !== 'all') {
+      params.status = stockFilter === 'available' ? 'publish' : 'draft';
     }
-  });
+    
+    // Ordenación
+    if (sortBy === 'name') {
+      params.orderby = 'title';
+      params.order = sortOrder;
+    } else if (sortBy === 'price') {
+      params.orderby = 'price';
+      params.order = sortOrder;
+    }
+    
+    return params;
+  };
   
-  // Paginación
+  // Cargar productos con los filtros actuales
+  const fetchProducts = async (params = {}) => {
+    console.log("Cargando productos con parámetros:", params);
+    try {
+      const result = await loadProducts(params);
+      console.log("Resultado de fetchProducts:", result);
+      return result;
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+    }
+  };
+  
+  // Efecto para cargar productos al inicio
   useEffect(() => {
-    setTotalPages(Math.ceil(sortedProducts.length / itemsPerPage));
-  }, [sortedProducts, itemsPerPage]);
+    console.log("Cargando productos iniciales");
+    fetchProducts({ page: 1, per_page: itemsPerPage });
+  }, []);
   
-  const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Manejar cambios en los filtros
+  const handleFiltersChange = () => {
+    console.log("Cambio en filtros, volviendo a página 1");
+    fetchProducts({
+      ...buildApiParams(),
+      page: 1 // Siempre volver a la primera página al cambiar filtros
+    });
+  };
   
-  // Toggle selección de todos los productos de la página actual
+  // Observar cambios en filtros
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleFiltersChange();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedCategory, stockFilter, sortBy, sortOrder]);
+  
+  // FUNCIÓN CRÍTICA: Cambiar de página
+  const handlePageChange = (page) => {
+    // Validaciones y logs
+    console.log(`Navegación a página ${page} solicitada. Página actual: ${currentPage}, Total páginas: ${totalPages}`);
+    
+    if (page < 1 || (totalPages > 0 && page > totalPages) || productsLoading) {
+      console.log(`Navegación cancelada: ${productsLoading ? 'Cargando...' : 'Página fuera de rango'}`);
+      return;
+    }
+    
+    // Actualizar UI inmediatamente
+    setCurrentPage(page);
+    
+    // Crear parámetros específicos para esta navegación
+    const params = {
+      ...buildApiParams(),
+      page: page
+    };
+    
+    console.log(`Ejecutando navegación a página ${page} con parámetros:`, params);
+    
+    // Usar loadProducts directamente en lugar de wooChangePage
+    // para asegurar que usamos los parámetros correctos
+    loadProducts(params).then(result => {
+      console.log(`Navegación a página ${page} completada:`, result);
+    }).catch(error => {
+      console.error(`Error en navegación a página ${page}:`, error);
+    });
+  };
+  
+  // Cambiar items por página
+  const handleItemsPerPageChange = (perPage) => {
+    console.log(`Cambiando a ${perPage} ítems por página`);
+    setItemsPerPage(perPage);
+    
+    const params = {
+      ...buildApiParams(),
+      page: 1, // Volver a primera página cuando cambia items por página
+      per_page: perPage
+    };
+    
+    fetchProducts(params);
+  };
+  
+  // Toggle selección de todos los productos
   const toggleSelectAll = () => {
     if (selectAll) {
       setSelectedProducts([]);
     } else {
-      const pageProductIds = paginatedProducts.map(product => product.id);
+      const pageProductIds = products.map(product => product.id);
       setSelectedProducts(pageProductIds);
     }
     setSelectAll(!selectAll);
   };
   
-  // Toggle selección de un producto individual
+  // Toggle selección de un producto
   const toggleSelectProduct = (productId) => {
     setSelectedProducts(prev => {
       if (prev.includes(productId)) {
@@ -136,18 +199,18 @@ const ProductsView = () => {
     });
   };
   
-  // Efecto para actualizar selectAll cuando cambia la selección
+  // Actualizar selectAll cuando cambia la selección
   useEffect(() => {
-    const pageProductIds = paginatedProducts.map(product => product.id);
-    const allSelected = pageProductIds.every(id => selectedProducts.includes(id));
-    setSelectAll(allSelected && pageProductIds.length > 0);
-  }, [selectedProducts, paginatedProducts]);
+    const pageProductIds = products.map(product => product.id);
+    const allSelected = pageProductIds.length > 0 && pageProductIds.every(id => selectedProducts.includes(id));
+    setSelectAll(allSelected);
+  }, [selectedProducts, products]);
   
-  // Estadísticas básicas
+  // Estadísticas
   const stats = {
-    total: products.length,
+    total: totalItems || 0,
     categories: categories.length,
-    filtered: filteredProducts.length,
+    filtered: totalItems || 0,
     selected: selectedProducts.length
   };
   
@@ -157,7 +220,7 @@ const ProductsView = () => {
     setShowProductModal(true);
   };
   
-  // Abrir modal para editar producto existente
+  // Abrir modal para editar producto
   const handleEditProduct = (product) => {
     setEditingProduct(product);
     setShowProductModal(true);
@@ -182,17 +245,21 @@ const ProductsView = () => {
     
     if (!confirmed) return;
     
-    selectedProducts.forEach(productId => {
+    const updatePromises = selectedProducts.map(productId => {
       const product = products.find(p => p.id === productId);
       if (product) {
-        handleSaveProduct({
+        return handleSaveProduct({
           ...product,
           available: available
         });
       }
+      return Promise.resolve();
     });
     
-    setSelectedProducts([]);
+    Promise.all(updatePromises).then(() => {
+      setSelectedProducts([]);
+      fetchProducts(buildApiParams()); // Recargar productos
+    });
   };
   
   // Acción masiva: eliminar productos
@@ -205,22 +272,34 @@ const ProductsView = () => {
     
     if (!confirmed) return;
     
-    selectedProducts.forEach(productId => {
-      handleDeleteProduct(productId);
+    const deletePromises = selectedProducts.map(productId => {
+      return handleDeleteProduct(productId);
     });
     
-    setSelectedProducts([]);
-  };
-  
-  // Cambiar página
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
+    Promise.all(deletePromises).then(() => {
+      setSelectedProducts([]);
+      fetchProducts(buildApiParams()); // Recargar productos
+    });
   };
   
   // Formatear número con separador de miles
   const formatNumber = (num) => {
+    if (!num) return '0';
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+  
+  // Restablecer filtros
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setPriceRange({ min: '', max: '' });
+    setStockFilter('all');
+    setSortBy('name');
+    setSortOrder('asc');
+    
+    // Recargar con valores predeterminados
+    setCurrentPage(1);
+    fetchProducts({ page: 1, per_page: itemsPerPage });
   };
 
   return (
@@ -267,7 +346,12 @@ const ProductsView = () => {
         </div>
       </div>
 
-      {/* Filtros avanzados (expandibles) */}
+      {/* Información de depuración de paginación - Quitar en producción */}
+      <div className="bg-yellow-50 border border-yellow-100 rounded-md p-2 mb-4 text-xs text-yellow-800">
+        <p>Debug paginación: Página {currentPage} de {totalPages} | Total items: {totalItems} | Por página: {itemsPerPage}</p>
+      </div>
+
+      {/* Filtros avanzados */}
       {showAdvancedFilters && (
         <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
           <div className="flex justify-between items-center mb-3">
@@ -353,14 +437,7 @@ const ProductsView = () => {
           <div className="flex justify-end mt-3">
             <button 
               className="bg-gray-200 text-gray-800 rounded-md px-3 py-1 text-xs font-medium hover:bg-gray-300 flex items-center space-x-1"
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('all');
-                setPriceRange({ min: '', max: '' });
-                setStockFilter('all');
-                setSortBy('name');
-                setSortOrder('asc');
-              }}
+              onClick={handleResetFilters}
             >
               <RefreshCw size={12} />
               <span>Restablecer filtros</span>
@@ -369,7 +446,7 @@ const ProductsView = () => {
         </div>
       )}
 
-      {/* Filtros de categoría */}
+      {/* Filtro de categorías */}
       <div className="mb-6">
         <ProductCategoryFilter 
           categories={categories}
@@ -437,7 +514,7 @@ const ProductsView = () => {
 
       {/* Lista de productos */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {/* Cabecera de la tabla con checkbox para seleccionar todos */}
+        {/* Cabecera de la tabla */}
         <div className="flex items-center bg-gray-50 px-6 py-3 border-b">
           <div className="pr-4">
             <input 
@@ -449,13 +526,14 @@ const ProductsView = () => {
           </div>
           <div className="flex-1 flex justify-between">
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-              {paginatedProducts.length} producto{paginatedProducts.length !== 1 ? 's' : ''}
+              {productsLoading ? 'Cargando...' : `${products.length} productos`}
             </div>
             <div className="flex items-center">
               <select 
                 className="border border-gray-300 rounded-md text-xs px-2 py-1 mr-2"
                 value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                disabled={productsLoading}
               >
                 <option value={10}>10 por página</option>
                 <option value={25}>25 por página</option>
@@ -465,17 +543,27 @@ const ProductsView = () => {
               <span className="text-xs text-gray-500 mr-2">
                 Página {currentPage} de {totalPages || 1}
               </span>
+              
+              {/* NAVEGACIÓN DE PÁGINAS */}
               <div className="flex">
+                {/* Botón para página anterior */}
                 <button 
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  onClick={() => {
+                    console.log("Navegando a página anterior:", currentPage - 1);
+                    handlePageChange(currentPage - 1);
+                  }}
+                  disabled={currentPage <= 1 || productsLoading}
                   className="border border-gray-300 rounded-l-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={14} />
                 </button>
+                {/* Botón para página siguiente */}
                 <button 
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => {
+                    console.log("Navegando a página siguiente:", currentPage + 1);
+                    handlePageChange(currentPage + 1);
+                  }}
+                  disabled={currentPage >= totalPages || productsLoading}
                   className="border border-gray-300 border-l-0 rounded-r-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={14} />
@@ -485,27 +573,51 @@ const ProductsView = () => {
           </div>
         </div>
         
-        {/* Componente ProductList existente con nuevas props */}
-        <ProductList 
-          products={paginatedProducts}
-          categories={categories}
-          onEditProduct={handleEditProduct}
-          selectedProducts={selectedProducts}
-          onToggleSelect={toggleSelectProduct}
-        />
+        {/* Indicador de carga */}
+        {productsLoading && (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mb-2"></div>
+            <p className="text-gray-500">Cargando productos...</p>
+          </div>
+        )}
         
-        {/* Paginación inferior */}
-        {totalPages > 1 && (
+        {/* Lista de productos */}
+        {!productsLoading && products.length > 0 && (
+          <ProductList 
+            products={products}
+            categories={categories}
+            onEditProduct={handleEditProduct}
+            selectedProducts={selectedProducts}
+            onToggleSelect={toggleSelectProduct}
+          />
+        )}
+        
+        {/* Mensaje de no hay resultados */}
+        {!productsLoading && products.length === 0 && (
+          <div className="p-8 text-center">
+            <div className="text-gray-400 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-700">No se encontraron productos</h3>
+            <p className="text-gray-500 mt-1">Prueba a cambiar los filtros o a crear nuevos productos</p>
+          </div>
+        )}
+        
+        {/* PAGINACIÓN INFERIOR */}
+        {totalPages > 1 && !productsLoading && (
           <div className="bg-gray-50 px-6 py-3 border-t flex justify-between items-center">
             <button 
               onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
+              disabled={currentPage <= 1}
               className="text-xs text-gray-700 hover:text-indigo-600 disabled:opacity-50 disabled:hover:text-gray-700"
             >
               Primera
             </button>
             
             <div className="flex space-x-1">
+              {/* Números de página */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 // Lógica para mostrar 5 páginas alrededor de la actual
                 let pageNum;
@@ -537,7 +649,7 @@ const ProductsView = () => {
             
             <button 
               onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage >= totalPages}
               className="text-xs text-gray-700 hover:text-indigo-600 disabled:opacity-50 disabled:hover:text-gray-700"
             >
               Última
@@ -562,7 +674,10 @@ const ProductsView = () => {
           selectedProducts={selectedProducts}
           products={products}
           categories={categories}
-          onUpdateProducts={() => setSelectedProducts([])}
+          onUpdateProducts={() => {
+            setSelectedProducts([]);
+            fetchProducts(buildApiParams()); // Recargar después de la edición masiva
+          }}
         />
       )}
     </div>
