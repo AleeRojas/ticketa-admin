@@ -39,12 +39,20 @@ const useWooProducts = () => {
       
       // Solicitar datos a la API
       const response = await woocommerceService.products.getProducts(queryParams);
-      
-      console.log('loadProducts - Respuesta recibida:', {
-        productos: response.data.length,
-        paginación: response.pagination
-      });
-      
+
+      // Si no hay resultados, devolver array vacío
+      if (response.data.length === 0) {
+        const emptyPagination = {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          perPage: queryParams.per_page
+        };
+        setProducts([]);
+        setPagination(emptyPagination);
+        return { products: [], pagination: emptyPagination };
+      }
+
       // Transformar los datos de WooCommerce al formato de nuestra aplicación
       const transformedProducts = response.data.map(item => ({
         id: item.id,
@@ -73,7 +81,7 @@ const useWooProducts = () => {
         perPage: parseInt(queryParams.per_page)
       };
       
-      console.log('loadProducts - Actualizando paginación a:', updatedPagination);
+      setProducts(transformedProducts);
       setPagination(updatedPagination);
       
       return {
@@ -83,6 +91,7 @@ const useWooProducts = () => {
     } catch (err) {
       console.error('Error cargando productos:', err);
       setError(err.message);
+      setProducts([]); // Asegúrate de limpiar los productos en caso de error
       return { products: [], pagination: pagination };
     } finally {
       setLoading(false);

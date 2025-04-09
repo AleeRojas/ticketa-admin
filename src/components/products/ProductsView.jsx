@@ -11,9 +11,8 @@ import { useWooCommerceContext } from '../../context/WooCommerceContext';
  * Vista principal de productos con paginación corregida
  */
 const ProductsView = () => {
+  // IMPORTANTE: Al estar usando dos contextos, necesitamos sincronizar los datos
   const { 
-    products, 
-    categories,
     handleSaveProduct,
     handleDeleteProduct
   } = useAppContext();
@@ -21,6 +20,8 @@ const ProductsView = () => {
   // Contexto de WooCommerce para usar loadProducts con paginación
   const { 
     loadProducts, 
+    products: wooProducts, // Importante: ahora usamos productos de WooCommerce directamente
+    categories: wooCategories, // Importante: también usamos categorías de WooCommerce
     changePage: wooChangePage,
     pagination: wooPagination,
     productsLoading 
@@ -101,8 +102,13 @@ const ProductsView = () => {
   const fetchProducts = async (params = {}) => {
     console.log("Cargando productos con parámetros:", params);
     try {
+      // Aquí está la clave de la solución: estamos usando el resultado directamente
       const result = await loadProducts(params);
       console.log("Resultado de fetchProducts:", result);
+      
+      // El estado de los productos está actualizado en WooCommerceContext
+      // y ahora usamos wooProducts en vez de products
+      
       return result;
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -124,7 +130,7 @@ const ProductsView = () => {
     });
   };
   
-  // Observar cambios en filtros
+  // Observar cambios en filtros con un debounce para la búsqueda
   useEffect(() => {
     const timer = setTimeout(() => {
       handleFiltersChange();
@@ -182,7 +188,7 @@ const ProductsView = () => {
     if (selectAll) {
       setSelectedProducts([]);
     } else {
-      const pageProductIds = products.map(product => product.id);
+      const pageProductIds = wooProducts.map(product => product.id);
       setSelectedProducts(pageProductIds);
     }
     setSelectAll(!selectAll);
@@ -201,15 +207,15 @@ const ProductsView = () => {
   
   // Actualizar selectAll cuando cambia la selección
   useEffect(() => {
-    const pageProductIds = products.map(product => product.id);
+    const pageProductIds = wooProducts.map(product => product.id);
     const allSelected = pageProductIds.length > 0 && pageProductIds.every(id => selectedProducts.includes(id));
     setSelectAll(allSelected);
-  }, [selectedProducts, products]);
+  }, [selectedProducts, wooProducts]);
   
   // Estadísticas
   const stats = {
     total: totalItems || 0,
-    categories: categories.length,
+    categories: wooCategories.length,
     filtered: totalItems || 0,
     selected: selectedProducts.length
   };
@@ -246,7 +252,7 @@ const ProductsView = () => {
     if (!confirmed) return;
     
     const updatePromises = selectedProducts.map(productId => {
-      const product = products.find(p => p.id === productId);
+      const product = wooProducts.find(p => p.id === productId);
       if (product) {
         return handleSaveProduct({
           ...product,
@@ -349,6 +355,7 @@ const ProductsView = () => {
       {/* Información de depuración de paginación - Quitar en producción */}
       <div className="bg-yellow-50 border border-yellow-100 rounded-md p-2 mb-4 text-xs text-yellow-800">
         <p>Debug paginación: Página {currentPage} de {totalPages} | Total items: {totalItems} | Por página: {itemsPerPage}</p>
+        <p>Productos actuales: {wooProducts.length}</p>
       </div>
 
       {/* Filtros avanzados */}
@@ -449,7 +456,7 @@ const ProductsView = () => {
       {/* Filtro de categorías */}
       <div className="mb-6">
         <ProductCategoryFilter 
-          categories={categories}
+          categories={wooCategories}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
         />
@@ -526,7 +533,7 @@ const ProductsView = () => {
           </div>
           <div className="flex-1 flex justify-between">
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-              {productsLoading ? 'Cargando...' : `${products.length} productos`}
+              {productsLoading ? 'Cargando...' : `${wooProducts.length} productos`}
             </div>
             <div className="flex items-center">
               <select 
@@ -582,18 +589,7 @@ const ProductsView = () => {
         )}
         
         {/* Lista de productos */}
-        {!productsLoading && products.length > 0 && (
-          <ProductList 
-            products={products}
-            categories={categories}
-            onEditProduct={handleEditProduct}
-            selectedProducts={selectedProducts}
-            onToggleSelect={toggleSelectProduct}
-          />
-        )}
-        
-        {/* Mensaje de no hay resultados */}
-        {!productsLoading && products.length === 0 && (
+        {!productsLoading && wooProducts.length === 0 ? (
           <div className="p-8 text-center">
             <div className="text-gray-400 mb-3">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -603,6 +599,18 @@ const ProductsView = () => {
             <h3 className="text-lg font-medium text-gray-700">No se encontraron productos</h3>
             <p className="text-gray-500 mt-1">Prueba a cambiar los filtros o a crear nuevos productos</p>
           </div>
+        ) : (
+          <>
+            {!productsLoading && wooProducts.length > 0 && (
+              <ProductList 
+                products={wooProducts}
+                categories={wooCategories}
+                onEditProduct={handleEditProduct}
+                selectedProducts={selectedProducts}
+                onToggleSelect={toggleSelectProduct}
+              />
+            )}
+          </>
         )}
         
         {/* PAGINACIÓN INFERIOR */}
@@ -663,7 +671,7 @@ const ProductsView = () => {
         <ProductModal
           onClose={() => setShowProductModal(false)}
           product={editingProduct}
-          categories={categories}
+          categories={wooCategories}
         />
       )}
       
@@ -672,8 +680,8 @@ const ProductsView = () => {
         <BulkEditModal
           onClose={() => setShowBulkEditModal(false)}
           selectedProducts={selectedProducts}
-          products={products}
-          categories={categories}
+          products={wooProducts}
+          categories={wooCategories}
           onUpdateProducts={() => {
             setSelectedProducts([]);
             fetchProducts(buildApiParams()); // Recargar después de la edición masiva
