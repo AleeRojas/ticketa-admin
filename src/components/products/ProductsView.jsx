@@ -8,23 +8,25 @@ import BulkEditModal from '../modals/BulkEditModal';
 import { useWooCommerceContext } from '../../context/WooCommerceContext';
 
 /**
- * Vista principal de productos con paginación corregida
+ * Vista principal de productos con paginación y modales corregidos
  */
 const ProductsView = () => {
-  // IMPORTANTE: Al estar usando dos contextos, necesitamos sincronizar los datos
+  // Contexto de App para operaciones de guardar/eliminar
   const { 
     handleSaveProduct,
     handleDeleteProduct
   } = useAppContext();
   
-  // Contexto de WooCommerce para usar loadProducts con paginación
+  // Contexto de WooCommerce para obtener y visualizar productos
   const { 
     loadProducts, 
-    products: wooProducts, // Importante: ahora usamos productos de WooCommerce directamente
-    categories: wooCategories, // Importante: también usamos categorías de WooCommerce
+    products: wooProducts,
+    categories: wooCategories,
     changePage: wooChangePage,
     pagination: wooPagination,
-    productsLoading 
+    productsLoading,
+    saveProduct: wooSaveProduct,    // Importante: obtenemos las funciones equivalentes de WooCommerce
+    deleteProduct: wooDeleteProduct 
   } = useWooCommerceContext();
   
   // Estados locales
@@ -102,13 +104,8 @@ const ProductsView = () => {
   const fetchProducts = async (params = {}) => {
     console.log("Cargando productos con parámetros:", params);
     try {
-      // Aquí está la clave de la solución: estamos usando el resultado directamente
       const result = await loadProducts(params);
       console.log("Resultado de fetchProducts:", result);
-      
-      // El estado de los productos está actualizado en WooCommerceContext
-      // y ahora usamos wooProducts en vez de products
-      
       return result;
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -220,6 +217,48 @@ const ProductsView = () => {
     selected: selectedProducts.length
   };
   
+  // NUEVO: Wrapper para guardado sincronizado entre contextos
+  const handleSaveProductSynchronized = async (productData) => {
+    try {
+      // 1. Guardar en AppContext
+      const savedInApp = await handleSaveProduct(productData);
+      console.log("Producto guardado en AppContext:", savedInApp);
+      
+      // 2. Guardar en WooCommerceContext
+      const savedInWoo = await wooSaveProduct(productData);
+      console.log("Producto guardado en WooCommerceContext:", savedInWoo);
+      
+      // 3. Actualizar vista con los datos más recientes
+      fetchProducts(buildApiParams());
+      
+      return savedInApp; // Devolver el resultado para compatibilidad
+    } catch (error) {
+      console.error("Error al guardar producto sincronizado:", error);
+      throw error;
+    }
+  };
+  
+  // NUEVO: Wrapper para eliminación sincronizada entre contextos
+  const handleDeleteProductSynchronized = async (productId) => {
+    try {
+      // 1. Eliminar en AppContext
+      const deletedInApp = await handleDeleteProduct(productId);
+      console.log("Producto eliminado en AppContext:", deletedInApp);
+      
+      // 2. Eliminar en WooCommerceContext
+      const deletedInWoo = await wooDeleteProduct(productId);
+      console.log("Producto eliminado en WooCommerceContext:", deletedInWoo);
+      
+      // 3. Actualizar vista con los datos más recientes
+      fetchProducts(buildApiParams());
+      
+      return deletedInApp; // Devolver el resultado para compatibilidad
+    } catch (error) {
+      console.error("Error al eliminar producto sincronizado:", error);
+      throw error;
+    }
+  };
+  
   // Abrir modal para crear nuevo producto
   const handleAddProduct = () => {
     setEditingProduct(null);
@@ -254,7 +293,7 @@ const ProductsView = () => {
     const updatePromises = selectedProducts.map(productId => {
       const product = wooProducts.find(p => p.id === productId);
       if (product) {
-        return handleSaveProduct({
+        return handleSaveProductSynchronized({
           ...product,
           available: available
         });
@@ -279,7 +318,7 @@ const ProductsView = () => {
     if (!confirmed) return;
     
     const deletePromises = selectedProducts.map(productId => {
-      return handleDeleteProduct(productId);
+      return handleDeleteProductSynchronized(productId);
     });
     
     Promise.all(deletePromises).then(() => {
@@ -306,6 +345,26 @@ const ProductsView = () => {
     // Recargar con valores predeterminados
     setCurrentPage(1);
     fetchProducts({ page: 1, per_page: itemsPerPage });
+  };
+  
+  // NUEVO: Manejador para cuando se guarda un producto desde el modal
+  const handleProductSaved = (savedProduct) => {
+    console.log("Producto guardado desde modal:", savedProduct);
+    // Cerrar el modal
+    setShowProductModal(false);
+    // Recargar los productos para ver los cambios
+    fetchProducts(buildApiParams());
+  };
+  
+  // NUEVO: Manejador para cuando se actualizan productos masivamente
+  const handleBulkProductsUpdated = () => {
+    console.log("Productos actualizados masivamente");
+    // Cerrar el modal
+    setShowBulkEditModal(false);
+    // Limpiar selección
+    setSelectedProducts([]);
+    // Recargar los productos para ver los cambios
+    fetchProducts(buildApiParams());
   };
 
   return (
@@ -666,26 +725,26 @@ const ProductsView = () => {
         )}
       </div>
       
-      {/* Modal de producto */}
+      {/* Modal de producto - MODIFICADO: ahora pasa el manejador de guardado sincronizado */}
       {showProductModal && (
         <ProductModal
           onClose={() => setShowProductModal(false)}
           product={editingProduct}
           categories={wooCategories}
+          onSave={handleProductSaved}
+          saveProductFunction={handleSaveProductSynchronized} // Pasar la función de guardado sincronizado
         />
       )}
       
-      {/* Modal de edición masiva */}
+      {/* Modal de edición masiva - MODIFICADO: ahora pasa el manejador de guardado sincronizado */}
       {showBulkEditModal && (
         <BulkEditModal
           onClose={() => setShowBulkEditModal(false)}
           selectedProducts={selectedProducts}
           products={wooProducts}
           categories={wooCategories}
-          onUpdateProducts={() => {
-            setSelectedProducts([]);
-            fetchProducts(buildApiParams()); // Recargar después de la edición masiva
-          }}
+          onUpdateProducts={handleBulkProductsUpdated}
+          saveProductFunction={handleSaveProductSynchronized} // Pasar la función de guardado sincronizado
         />
       )}
     </div>

@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Check } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
-const BulkEditModal = ({ onClose, selectedProducts = [], products, categories, onUpdateProducts }) => {
-  const { handleSaveProduct } = useAppContext();
+const BulkEditModal = ({ onClose, selectedProducts = [], products, categories, onUpdateProducts, saveProductFunction }) => {
+  // Si se proporciona una función personalizada de guardado, usarla, sino usar la del contexto
+  const { handleSaveProduct: contextSaveProduct } = useAppContext();
+  
+  // Función de guardado final a utilizar
+  const saveProduct = saveProductFunction || contextSaveProduct;
+  
   const [editFields, setEditFields] = useState({
     price: { enabled: false, value: '', operation: 'set', percent: 10 },
     cost: { enabled: false, value: '', operation: 'set', percent: 10 },
@@ -202,7 +207,8 @@ const BulkEditModal = ({ onClose, selectedProducts = [], products, categories, o
           updates.stock = summary.changes.stock.values[i] || product.stock;
         }
         
-        await handleSaveProduct({
+        // Usar la función personalizada de guardado si se proporciona
+        await saveProduct({
           ...product,
           ...updates
         });
@@ -214,8 +220,12 @@ const BulkEditModal = ({ onClose, selectedProducts = [], products, categories, o
         }
       }
       
-      if (onUpdateProducts) onUpdateProducts();
-      onClose();
+      // Llamar al callback onUpdateProducts si existe
+      if (typeof onUpdateProducts === 'function') {
+        onUpdateProducts();
+      } else {
+        onClose();
+      }
     } catch (error) {
       console.error('Error al aplicar cambios:', error);
       setIsProcessing(false);

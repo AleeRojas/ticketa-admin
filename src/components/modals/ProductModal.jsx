@@ -4,9 +4,15 @@ import { useAppContext } from '../../context/AppContext';
 
 /**
  * Modal para crear y editar productos
+ * @param {Function} saveProductFunction - Función personalizada para guardar productos (opcional)
+ * @param {Function} onSave - Callback cuando se completa el guardado (opcional)
  */
-const ProductModal = ({ onClose, product, categories }) => {
-  const { handleSaveProduct, handleDeleteProduct } = useAppContext();
+const ProductModal = ({ onClose, product, categories, saveProductFunction, onSave }) => {
+  // Si se proporciona una función personalizada de guardado, usarla, sino usar la del contexto
+  const { handleSaveProduct: contextSaveProduct, handleDeleteProduct } = useAppContext();
+  
+  // Función de guardado final a utilizar
+  const saveProduct = saveProductFunction || contextSaveProduct;
   
   // Estado inicial del formulario
   const initialState = product ? { ...product } : {
@@ -124,18 +130,31 @@ const ProductModal = ({ onClose, product, categories }) => {
   };
   
   // Manejar el envío del formulario
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Asegurarse de que ingredients y allergens sean arrays
-    const finalData = {
-      ...formData,
-      ingredients: Array.isArray(formData.ingredients) ? formData.ingredients : [],
-      allergens: Array.isArray(formData.allergens) ? formData.allergens : []
-    };
-    
-    handleSaveProduct(finalData);
-    onClose();
+    try {
+      // Asegurarse de que ingredients y allergens sean arrays
+      const finalData = {
+        ...formData,
+        ingredients: Array.isArray(formData.ingredients) ? formData.ingredients : [],
+        allergens: Array.isArray(formData.allergens) ? formData.allergens : []
+      };
+      
+      // Usar la función de guardado (personalizada o del contexto)
+      const saved = await saveProduct(finalData);
+      
+      // Si hay un callback onSave, llamarlo con el producto guardado
+      if (typeof onSave === 'function') {
+        onSave(saved);
+      } else {
+        // Comportamiento original si no hay callback
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error al guardar producto:', error);
+      alert('Error al guardar el producto. Intente nuevamente.');
+    }
   };
   
   // Manejar la eliminación del producto
