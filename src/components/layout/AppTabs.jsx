@@ -2,7 +2,7 @@ import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 
 /**
- * Componente de pestañas principales de navegación
+ * Componente de pestañas principales de navegación (con Marketing añadido)
  */
 const AppTabs = () => {
   const { activeTab, setActiveTab } = useAppContext();
@@ -12,6 +12,7 @@ const AppTabs = () => {
     { id: 'mesas', label: 'Mesas' },
     { id: 'pedidos', label: 'Pedidos' },
     { id: 'productos', label: 'Productos' },
+    { id: 'marketing', label: 'Marketing' },
     { id: 'estadisticas', label: 'Estadísticas' }
   ];
 
