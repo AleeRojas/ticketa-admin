@@ -7,11 +7,14 @@ import {
   Copy, 
   Instagram, 
   Facebook, 
-  Twitter 
+  Twitter,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
+import ContentGenerator from './ContentGenerator';
 
 /**
- * Componente para la pestaña de Redes Sociales
+ * Componente para la pestaña de Redes Sociales (actualizado con métricas)
  */
 const SocialContent = ({ 
   posts, 
@@ -21,6 +24,44 @@ const SocialContent = ({
 }) => {
   return (
     <div className="space-y-8">
+      {/* Resumen de estadísticas de redes sociales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow p-4">
+          <h4 className="text-sm font-medium text-gray-500">Publicaciones totales</h4>
+          <p className="text-2xl font-bold mt-1">{posts.length}</p>
+          <div className="flex items-center text-gray-500 text-xs mt-1">
+            <span>En todas las plataformas</span>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4">
+          <h4 className="text-sm font-medium text-gray-500">Engagement</h4>
+          <p className="text-2xl font-bold mt-1">3.8%</p>
+          <div className="flex items-center text-green-600 text-xs mt-1">
+            <span>+0.7%</span>
+            <span className="text-gray-500 ml-1">vs anterior</span>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4">
+          <h4 className="text-sm font-medium text-gray-500">Alcance</h4>
+          <p className="text-2xl font-bold mt-1">1,543</p>
+          <div className="flex items-center text-green-600 text-xs mt-1">
+            <span>+12%</span>
+            <span className="text-gray-500 ml-1">vs anterior</span>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4">
+          <h4 className="text-sm font-medium text-gray-500">Clics hacia menú</h4>
+          <p className="text-2xl font-bold mt-1">287</p>
+          <div className="flex items-center text-green-600 text-xs mt-1">
+            <span>+34</span>
+            <span className="text-gray-500 ml-1">vs anterior</span>
+          </div>
+        </div>
+      </div>
+      
       {/* Sección de publicaciones programadas */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-4">
@@ -121,78 +162,270 @@ const SocialContent = ({
       </div>
       
       {/* Generador de contenido */}
+      <ContentGenerator />
+      
+      {/* Métricas de rendimiento por plataforma */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Generador de Contenido</h3>
-          <button className="bg-indigo-600 text-white px-3 py-1.5 rounded-md text-sm">
-            Generar con IA
-          </button>
+          <h3 className="text-lg font-semibold text-gray-800">Rendimiento por Plataforma</h3>
+          <select className="border border-gray-300 rounded-md px-3 py-1 text-sm">
+            <option>Últimos 30 días</option>
+            <option>Últimos 7 días</option>
+            <option>Este mes</option>
+          </select>
         </div>
         
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tipo de contenido
-            </label>
-            <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-              <option>Promoción de plato</option>
-              <option>Evento especial</option>
-              <option>Oferta de tiempo limitado</option>
-              <option>Presentación de chef</option>
-              <option>Publicación informativa</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Elementos a incluir
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex items-center">
-                <input type="checkbox" id="inc-prices" className="h-4 w-4 text-indigo-600 rounded" />
-                <label htmlFor="inc-prices" className="ml-2 text-sm text-gray-700">Precios</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Instagram */}
+          <div className="border border-pink-100 rounded-lg p-4">
+            <div className="flex items-center mb-3">
+              <Instagram size={18} className="text-pink-600 mr-2" />
+              <h4 className="text-md font-medium text-gray-800">Instagram</h4>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Seguidores</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">1,245</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +45
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <input type="checkbox" id="inc-desc" className="h-4 w-4 text-indigo-600 rounded" />
-                <label htmlFor="inc-desc" className="ml-2 text-sm text-gray-700">Descripción</label>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Engagement</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">4.7%</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +0.8%
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <input type="checkbox" id="inc-hashtags" className="h-4 w-4 text-indigo-600 rounded" />
-                <label htmlFor="inc-hashtags" className="ml-2 text-sm text-gray-700">Hashtags</label>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Impresiones</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">3,862</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +15%
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <input type="checkbox" id="inc-call" className="h-4 w-4 text-indigo-600 rounded" />
-                <label htmlFor="inc-call" className="ml-2 text-sm text-gray-700">Llamada a la acción</label>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Clics al perfil</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">138</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +28
+                  </span>
+                </div>
               </div>
             </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Producto o evento a promocionar
-            </label>
-            <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-              <option>-- Seleccionar producto --</option>
-              <option>Paella de Mariscos</option>
-              <option>Gin Tonic Especial</option>
-              <option>Menú de Degustación</option>
-              <option>Happy Hour (2x1)</option>
-            </select>
+          {/* Facebook */}
+          <div className="border border-blue-100 rounded-lg p-4">
+            <div className="flex items-center mb-3">
+              <Facebook size={18} className="text-blue-600 mr-2" />
+              <h4 className="text-md font-medium text-gray-800">Facebook</h4>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Seguidores</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">865</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +12
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Engagement</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">2.8%</span>
+                  <span className="text-xs text-red-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5 transform rotate-180" />
+                    -0.3%
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Impresiones</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">2,145</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +8%
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Clics al perfil</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">94</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +16
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Vista previa del contenido</h4>
-            <p className="text-sm text-gray-500 mb-2">
-              ¡Disfruta de nuestra deliciosa Paella de Mariscos este fin de semana! 🦐🦪 Una explosión de sabores del mar en cada bocado. Disponible por tiempo limitado a $15.990.
-            </p>
-            <p className="text-sm text-gray-500 mb-2">
-              Reserva ya en nuestra web o visítanos. #GastronomíaEspañola #Mariscos #YaMenuRestaurant
-            </p>
-            <div className="flex justify-end">
-              <button className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center">
-                <Copy size={14} className="mr-1" />
-                Copiar
+          {/* Twitter */}
+          <div className="border border-blue-100 rounded-lg p-4">
+            <div className="flex items-center mb-3">
+              <Twitter size={18} className="text-blue-500 mr-2" />
+              <h4 className="text-md font-medium text-gray-800">Twitter</h4>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Seguidores</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">542</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +8
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Engagement</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">3.2%</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +0.5%
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Impresiones</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">1,256</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +11%
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Clics al perfil</span>
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">55</span>
+                  <span className="text-xs text-green-600 ml-2 flex items-center">
+                    <TrendingUp size={12} className="mr-0.5" />
+                    +9
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+
+      {/* Calendario de publicaciones */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">Calendario de Publicaciones</h3>
+          <button className="text-indigo-600 hover:text-indigo-800 text-sm">
+            Ver calendario completo
+          </button>
+        </div>
+        
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="text-sm font-medium text-gray-700">Mayo 2025</h4>
+            <div className="flex space-x-1">
+              <button className="p-1 rounded-md hover:bg-gray-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
               </button>
+              <button className="p-1 rounded-md hover:bg-gray-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1">
+            <div className="text-center text-xs font-medium text-gray-500 py-1">Lun</div>
+            <div className="text-center text-xs font-medium text-gray-500 py-1">Mar</div>
+            <div className="text-center text-xs font-medium text-gray-500 py-1">Mié</div>
+            <div className="text-center text-xs font-medium text-gray-500 py-1">Jue</div>
+            <div className="text-center text-xs font-medium text-gray-500 py-1">Vie</div>
+            <div className="text-center text-xs font-medium text-gray-500 py-1">Sáb</div>
+            <div className="text-center text-xs font-medium text-gray-500 py-1">Dom</div>
+            
+            {/* Días de ejemplo con publicaciones programadas */}
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">1</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">2</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">3</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">4</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">5</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">6</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">7</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">8</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">9</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1 bg-indigo-50 border-indigo-200">
+              <span className="text-xs">10</span>
+              <div className="h-1 w-1 bg-indigo-500 rounded-full mt-1"></div>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">11</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">12</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">13</span>
+            </div>
+            <div className="aspect-square border border-gray-200 rounded-md flex flex-col items-center justify-center p-1">
+              <span className="text-xs text-gray-400">14</span>
+            </div>
+          </div>
+          
+          <div className="mt-3 text-xs text-gray-500">
+            <div className="flex items-center">
+              <div className="h-2 w-2 bg-indigo-500 rounded-full mr-1"></div>
+              <span>Publicación programada</span>
             </div>
           </div>
         </div>
