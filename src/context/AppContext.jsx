@@ -5,6 +5,7 @@ import { initialSalons } from '../data/initialSalons';
 import { initialProducts, productCategories } from '../data/products';
 import useRealTimeUpdates from '../hooks/useRealTimeUpdates';
 import { useWooCommerceContext } from './WooCommerceContext';
+import { isMobileDevice, addResizeListener } from '../utils/deviceDetection';
 
 // Nombres de las claves para localStorage
 const LOCAL_STORAGE_KEYS = {
@@ -41,14 +42,28 @@ export const AppProvider = ({ children }) => {
   // Estado para controlar el sidebar en dispositivos móviles
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     // En móviles, el sidebar comienza cerrado por defecto
-    const storedState = localStorage.getItem(LOCAL_STORAGE_KEYS.SIDEBAR_STATE);
-    return storedState ? JSON.parse(storedState) : false;
+    try {
+      const storedState = localStorage.getItem(LOCAL_STORAGE_KEYS.SIDEBAR_STATE);
+      const isMobile = isMobileDevice(); // lg breakpoint en Tailwind
+      // En móviles siempre empezamos con el sidebar cerrado
+      if (isMobile) return false;
+      // En desktop respetamos el estado guardado o por defecto lo abrimos
+      return storedState ? JSON.parse(storedState) : true;
+    } catch (error) {
+      console.error('Error loading sidebar state:', error);
+      return false;
+    }
   });
 
   // Función para alternar el estado del sidebar
   const toggleSidebar = useCallback(() => {
-    setIsSidebarOpen(prevState => !prevState);
-  }, []);
+    console.log('Toggle sidebar called, current state:', isSidebarOpen); // Para depuración
+    setIsSidebarOpen(prevState => {
+      const newState = !prevState;
+      console.log('Setting sidebar state to:', newState); // Para depuración
+      return newState;
+    });
+  }, [isSidebarOpen]);
 
   // Guardar estado del sidebar en localStorage
   useEffect(() => {
@@ -61,11 +76,28 @@ export const AppProvider = ({ children }) => {
 
   // Cerrar automáticamente el sidebar en dispositivos móviles al cambiar de pestaña
   useEffect(() => {
-    const isMobile = window.innerWidth < 1024; // lg breakpoint en Tailwind
+    const isMobile = isMobileDevice();
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
     }
   }, [activeTab, isSidebarOpen]);
+
+  // Efecto para manejar el cambio de tamaño de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = isMobileDevice();
+      // Si cambiamos a móvil y el sidebar está abierto, lo cerramos
+      if (isMobile && isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+    
+    // Agregar listener
+    const cleanup = addResizeListener(handleResize);
+    
+    // Limpiar al desmontar
+    return cleanup;
+  }, [isSidebarOpen, setIsSidebarOpen]);
 
   // Estados principales
   const [tables, setTables] = useState(() => {

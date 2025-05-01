@@ -15,7 +15,13 @@ import { useAppContext } from '../../context/AppContext';
  * Componente de barra lateral de navegación con soporte para dispositivos móviles
  */
 const Sidebar = () => {
-  const { isSidebarOpen, toggleSidebar } = useAppContext();
+  const { isSidebarOpen, toggleSidebar, setIsSidebarOpen } = useAppContext();
+
+  // Función para manejar clic en overlay
+  const handleOverlayClick = (e) => {
+    e.stopPropagation(); // Detener propagación
+    toggleSidebar();
+  };
 
   // Array de elementos del menú para mejor mantenimiento
   const menuItems = [
@@ -33,13 +39,16 @@ const Sidebar = () => {
       {isSidebarOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20"
-          onClick={toggleSidebar}
+          onClick={handleOverlayClick}
         />
       )}
 
       {/* Botón de menú móvil */}
       <button 
-        onClick={toggleSidebar}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleSidebar();
+        }}
         className="lg:hidden fixed top-4 left-4 z-30 bg-indigo-600 text-white p-2 rounded-md"
       >
         <Menu size={20} />
@@ -58,7 +67,10 @@ const Sidebar = () => {
             <LayoutGrid size={24} />
           </div>
           <button 
-            onClick={toggleSidebar}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSidebar();
+            }}
             className="lg:hidden text-white"
           >
             <X size={24} />

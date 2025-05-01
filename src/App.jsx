@@ -33,8 +33,9 @@ const MainContent = () => {
       <Header />
       <AppTabs />
       
-      {/* Barra de estado de sincronización de WooCommerce */}
-      <div className="px-3 md:px-6 pt-2 md:pt-4">
+      {/* Barra de estado de sincronización de WooCommerce - solo visible en desktop
+         En móvil la mostramos en el Header */}
+      <div className="px-3 md:px-6 pt-2 md:pt-4 hidden md:block">
         <WooSyncStatus />
       </div>
       

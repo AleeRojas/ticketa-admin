@@ -145,6 +145,7 @@ const ProductList = ({
                     </div>
                   )}
                 </td>
+
                 <td className="px-4 py-4 text-right">
                   {product.stock !== undefined ? (
                     <span className={`text-sm font-medium ${

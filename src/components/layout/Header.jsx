@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Bell, X, Menu } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
+import WooSyncStatus from '../woocommerce/WooSyncStatus';
 
 /**
  * Componente de cabecera de la aplicación adaptado para móviles
@@ -8,13 +9,27 @@ import { useAppContext } from '../../context/AppContext';
 const Header = () => {
   const { toggleSidebar, isSidebarOpen } = useAppContext();
   const [showSearch, setShowSearch] = useState(false);
+  
+  // Función para manejar el clic en el botón del menú
+  const handleMenuClick = (e) => {
+    e.stopPropagation(); // Evita que el evento se propague
+    toggleSidebar();
+  };
 
   return (
     <header className="bg-white shadow-sm p-2 md:p-4 safe-top">
       <div className="flex justify-between items-center">
         {/* Logo y Título */}
         <div className="flex items-center">
-          <h1 className="text-lg md:text-2xl font-semibold text-gray-800 ml-8 lg:ml-0">YAMENÚ</h1>
+          {/* Botón de menú móvil desde el Header (alternativa) */}
+          <button 
+            onClick={handleMenuClick}
+            className="lg:hidden mr-2 text-gray-600"
+            aria-label="Menu"
+          >
+            <Menu size={20} />
+          </button>
+          <h1 className="text-lg md:text-2xl font-semibold text-gray-800">YAMENÚ</h1>
         </div>
 
         {/* Parte derecha del header - versión desktop */}
@@ -72,6 +87,11 @@ const Header = () => {
             </>
           )}
         </div>
+      </div>
+      
+      {/* Barra de estado de sincronización en versión móvil */}
+      <div className="md:hidden mt-2">
+        <WooSyncStatus />
       </div>
     </header>
   );

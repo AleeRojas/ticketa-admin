@@ -9,6 +9,7 @@ import { useWooCommerceContext } from '../../context/WooCommerceContext';
 
 /**
  * Vista principal de productos con paginación y modales corregidos
+ * Mejorada para visualización responsiva en dispositivos móviles
  */
 const ProductsView = () => {
   // Contexto de App para operaciones de guardar/eliminar
@@ -25,7 +26,7 @@ const ProductsView = () => {
     changePage: wooChangePage,
     pagination: wooPagination,
     productsLoading,
-    saveProduct: wooSaveProduct,    // Importante: obtenemos las funciones equivalentes de WooCommerce
+    saveProduct: wooSaveProduct,
     deleteProduct: wooDeleteProduct 
   } = useWooCommerceContext();
   
@@ -52,7 +53,6 @@ const ProductsView = () => {
   // Sincronizar con paginación de WooCommerce
   useEffect(() => {
     if (wooPagination) {
-      console.log('ProductsView - Actualizando paginación:', wooPagination);
       setCurrentPage(wooPagination.currentPage);
       setTotalPages(wooPagination.totalPages);
       setTotalItems(wooPagination.totalItems);
@@ -73,22 +73,10 @@ const ProductsView = () => {
       per_page: itemsPerPage
     };
     
-    // Filtro por búsqueda
-    if (searchTerm) {
-      params.search = searchTerm;
-    }
+    if (searchTerm) params.search = searchTerm;
+    if (selectedCategory !== 'all') params.category = selectedCategory;
+    if (stockFilter !== 'all') params.status = stockFilter === 'available' ? 'publish' : 'draft';
     
-    // Filtro por categoría
-    if (selectedCategory !== 'all') {
-      params.category = selectedCategory;
-    }
-    
-    // Filtro por disponibilidad/estado
-    if (stockFilter !== 'all') {
-      params.status = stockFilter === 'available' ? 'publish' : 'draft';
-    }
-    
-    // Ordenación
     if (sortBy === 'name') {
       params.orderby = 'title';
       params.order = sortOrder;
@@ -102,11 +90,8 @@ const ProductsView = () => {
   
   // Cargar productos con los filtros actuales
   const fetchProducts = async (params = {}) => {
-    console.log("Cargando productos con parámetros:", params);
     try {
-      const result = await loadProducts(params);
-      console.log("Resultado de fetchProducts:", result);
-      return result;
+      return await loadProducts(params);
     } catch (error) {
       console.error("Error al cargar productos:", error);
     }
@@ -114,13 +99,11 @@ const ProductsView = () => {
   
   // Efecto para cargar productos al inicio
   useEffect(() => {
-    console.log("Cargando productos iniciales");
     fetchProducts({ page: 1, per_page: itemsPerPage });
   }, []);
   
   // Manejar cambios en los filtros
   const handleFiltersChange = () => {
-    console.log("Cambio en filtros, volviendo a página 1");
     fetchProducts({
       ...buildApiParams(),
       page: 1 // Siempre volver a la primera página al cambiar filtros
@@ -135,40 +118,27 @@ const ProductsView = () => {
     
     return () => clearTimeout(timer);
   }, [searchTerm, selectedCategory, stockFilter, sortBy, sortOrder]);
-  
+
   // FUNCIÓN CRÍTICA: Cambiar de página
   const handlePageChange = (page) => {
-    // Validaciones y logs
-    console.log(`Navegación a página ${page} solicitada. Página actual: ${currentPage}, Total páginas: ${totalPages}`);
-    
     if (page < 1 || (totalPages > 0 && page > totalPages) || productsLoading) {
-      console.log(`Navegación cancelada: ${productsLoading ? 'Cargando...' : 'Página fuera de rango'}`);
       return;
     }
     
-    // Actualizar UI inmediatamente
     setCurrentPage(page);
     
-    // Crear parámetros específicos para esta navegación
     const params = {
       ...buildApiParams(),
       page: page
     };
     
-    console.log(`Ejecutando navegación a página ${page} con parámetros:`, params);
-    
-    // Usar loadProducts directamente en lugar de wooChangePage
-    // para asegurar que usamos los parámetros correctos
-    loadProducts(params).then(result => {
-      console.log(`Navegación a página ${page} completada:`, result);
-    }).catch(error => {
+    loadProducts(params).catch(error => {
       console.error(`Error en navegación a página ${page}:`, error);
     });
   };
   
   // Cambiar items por página
   const handleItemsPerPageChange = (perPage) => {
-    console.log(`Cambiando a ${perPage} ítems por página`);
     setItemsPerPage(perPage);
     
     const params = {
@@ -222,11 +192,9 @@ const ProductsView = () => {
     try {
       // 1. Guardar en AppContext
       const savedInApp = await handleSaveProduct(productData);
-      console.log("Producto guardado en AppContext:", savedInApp);
       
       // 2. Guardar en WooCommerceContext
       const savedInWoo = await wooSaveProduct(productData);
-      console.log("Producto guardado en WooCommerceContext:", savedInWoo);
       
       // 3. Actualizar vista con los datos más recientes
       fetchProducts(buildApiParams());
@@ -243,11 +211,9 @@ const ProductsView = () => {
     try {
       // 1. Eliminar en AppContext
       const deletedInApp = await handleDeleteProduct(productId);
-      console.log("Producto eliminado en AppContext:", deletedInApp);
       
       // 2. Eliminar en WooCommerceContext
       const deletedInWoo = await wooDeleteProduct(productId);
-      console.log("Producto eliminado en WooCommerceContext:", deletedInWoo);
       
       // 3. Actualizar vista con los datos más recientes
       fetchProducts(buildApiParams());
@@ -279,7 +245,7 @@ const ProductsView = () => {
     }
     setShowBulkEditModal(true);
   };
-  
+
   // Acción masiva: cambiar disponibilidad
   const handleBulkAvailability = (available) => {
     if (selectedProducts.length === 0) return;
@@ -349,7 +315,6 @@ const ProductsView = () => {
   
   // NUEVO: Manejador para cuando se guarda un producto desde el modal
   const handleProductSaved = (savedProduct) => {
-    console.log("Producto guardado desde modal:", savedProduct);
     // Cerrar el modal
     setShowProductModal(false);
     // Recargar los productos para ver los cambios
@@ -358,7 +323,6 @@ const ProductsView = () => {
   
   // NUEVO: Manejador para cuando se actualizan productos masivamente
   const handleBulkProductsUpdated = () => {
-    console.log("Productos actualizados masivamente");
     // Cerrar el modal
     setShowBulkEditModal(false);
     // Limpiar selección
@@ -368,9 +332,9 @@ const ProductsView = () => {
   };
 
   return (
-    <div>
+    <div className="pb-4">
       {/* Cabecera y filtros */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 mb-3 md:mb-6">
         <h2 className="text-lg md:text-xl font-semibold text-gray-800">
           Gestión de productos
           {selectedProducts.length > 0 && (
@@ -411,15 +375,9 @@ const ProductsView = () => {
         </div>
       </div>
 
-      {/* Información de depuración de paginación - Quitar en producción */}
-      <div className="bg-yellow-50 border border-yellow-100 rounded-md p-2 mb-4 text-xs text-yellow-800">
-        <p>Debug paginación: Página {currentPage} de {totalPages} | Total items: {totalItems} | Por página: {itemsPerPage}</p>
-        <p>Productos actuales: {wooProducts.length}</p>
-      </div>
-
       {/* Filtros avanzados */}
       {showAdvancedFilters && (
-        <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+        <div className="bg-gray-50 p-3 md:p-4 rounded-lg mb-3 md:mb-6 border border-gray-200">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-medium text-gray-700">Filtros avanzados</h3>
             <button 
@@ -430,7 +388,7 @@ const ProductsView = () => {
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
             {/* Filtro de precio */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -513,7 +471,7 @@ const ProductsView = () => {
       )}
 
       {/* Filtro de categorías */}
-      <div className="mb-6">
+      <div className="mb-3 md:mb-6 overflow-x-auto">
         <ProductCategoryFilter 
           categories={wooCategories}
           selectedCategory={selectedCategory}
@@ -521,68 +479,73 @@ const ProductsView = () => {
         />
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-2 md:flex gap-2 md:gap-4 mb-6 overflow-x-auto pb-2">
-        <div className="bg-white rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32">
+      {/* Estadísticas - Adaptadas para móvil */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-6 overflow-x-auto pb-2">
+        <div className="bg-white rounded-lg shadow p-3 md:p-4">
           <p className="text-xs md:text-sm text-gray-500 truncate">Total de productos</p>
-          <p className="text-xl md:text-2xl font-semibold">{formatNumber(stats.total)}</p>
+          <p className="text-lg md:text-2xl font-semibold">{formatNumber(stats.total)}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32">
+        <div className="bg-white rounded-lg shadow p-3 md:p-4">
           <p className="text-xs md:text-sm text-gray-500 truncate">Categorías</p>
-          <p className="text-xl md:text-2xl font-semibold">{formatNumber(stats.categories)}</p>
+          <p className="text-lg md:text-2xl font-semibold">{formatNumber(stats.categories)}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32">
+        <div className="bg-white rounded-lg shadow p-3 md:p-4">
           <p className="text-xs md:text-sm text-gray-500 truncate">Resultados</p>
-          <p className="text-xl md:text-2xl font-semibold">{formatNumber(stats.filtered)}</p>
+          <p className="text-lg md:text-2xl font-semibold">{formatNumber(stats.filtered)}</p>
         </div>
         {selectedProducts.length > 0 && (
-          <div className="bg-indigo-50 rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32 col-span-2 md:col-span-1">
+          <div className="bg-indigo-50 rounded-lg shadow p-3 md:p-4 col-span-2 sm:col-span-1">
             <p className="text-xs md:text-sm text-indigo-600 truncate">Seleccionados</p>
-            <p className="text-xl md:text-2xl font-semibold text-indigo-700">{formatNumber(stats.selected)}</p>
+            <p className="text-lg md:text-2xl font-semibold text-indigo-700">{formatNumber(stats.selected)}</p>
           </div>
         )}
       </div>
 
-      {/* Acciones para edición masiva */}
+      {/* Acciones para edición masiva - Adaptadas para móvil */}
       {selectedProducts.length > 0 && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-6 flex justify-between items-center">
-          <div className="text-sm text-indigo-800">
+        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-3 md:mb-6">
+          <div className="text-sm text-indigo-800 mb-2 md:mb-0 md:hidden">
             {selectedProducts.length} producto{selectedProducts.length !== 1 ? 's' : ''} seleccionado{selectedProducts.length !== 1 ? 's' : ''}
           </div>
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => handleBulkAvailability(true)}
-              className="bg-white border border-indigo-600 text-indigo-600 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-indigo-50"
-            >
-              Marcar como disponibles
-            </button>
-            <button 
-              onClick={() => handleBulkAvailability(false)}
-              className="bg-white border border-indigo-600 text-indigo-600 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-indigo-50"
-            >
-              Marcar como no disponibles
-            </button>
-            <button 
-              onClick={handleBulkEdit}
-              className="bg-indigo-600 text-white rounded-md px-3 py-1.5 text-sm font-medium hover:bg-indigo-700"
-            >
-              Edición masiva
-            </button>
-            <button 
-              onClick={handleBulkDelete}
-              className="bg-red-600 text-white rounded-md px-3 py-1.5 text-sm font-medium hover:bg-red-700"
-            >
-              Eliminar seleccionados
-            </button>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+            <div className="text-sm text-indigo-800 hidden md:block">
+              {selectedProducts.length} producto{selectedProducts.length !== 1 ? 's' : ''} seleccionado{selectedProducts.length !== 1 ? 's' : ''}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => handleBulkAvailability(true)}
+                className="bg-white border border-indigo-600 text-indigo-600 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-indigo-50"
+              >
+                Marcar disponibles
+              </button>
+              <button 
+                onClick={() => handleBulkAvailability(false)}
+                className="bg-white border border-indigo-600 text-indigo-600 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-indigo-50"
+              >
+                Marcar no disponibles
+              </button>
+              <button 
+                onClick={handleBulkEdit}
+                className="bg-indigo-600 text-white rounded-md px-3 py-1.5 text-sm font-medium hover:bg-indigo-700"
+              >
+                Edición masiva
+              </button>
+              <button 
+                onClick={handleBulkDelete}
+                className="bg-red-600 text-white rounded-md px-3 py-1.5 text-sm font-medium hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Lista de productos */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {/* Cabecera de la tabla */}
-        <div className="flex items-center bg-gray-50 px-6 py-3 border-b">
-          <div className="pr-4">
+        {/* Cabecera de la tabla - Adaptada para móvil */}
+        <div className="flex items-center bg-gray-50 px-3 md:px-6 py-3 border-b">
+          <div className="pr-2 md:pr-4">
             <input 
               type="checkbox" 
               checked={selectAll}
@@ -590,50 +553,69 @@ const ProductsView = () => {
               className="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
             />
           </div>
-          <div className="flex-1 flex justify-between">
+          <div className="flex-1 flex flex-col md:flex-row md:justify-between md:items-center">
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
               {productsLoading ? 'Cargando...' : `${wooProducts.length} productos`}
             </div>
-            <div className="flex items-center">
-              <select 
-                className="border border-gray-300 rounded-md text-xs px-2 py-1 mr-2"
-                value={itemsPerPage}
-                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                disabled={productsLoading}
-              >
-                <option value={10}>10 por página</option>
-                <option value={25}>25 por página</option>
-                <option value={50}>50 por página</option>
-                <option value={100}>100 por página</option>
-              </select>
-              <span className="text-xs text-gray-500 mr-2">
-                Página {currentPage} de {totalPages || 1}
-              </span>
+            
+            {/* Paginación para móvil - simplificada */}
+            <div className="flex items-center justify-between mt-2 md:mt-0">
+              <div className="flex md:hidden items-center">
+                <span className="text-xs text-gray-500 mr-2">
+                  Pág. {currentPage} / {totalPages || 1}
+                </span>
+                <div className="flex">
+                  <button 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1 || productsLoading}
+                    className="border border-gray-300 rounded-l-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages || productsLoading}
+                    className="border border-gray-300 border-l-0 rounded-r-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
               
-              {/* NAVEGACIÓN DE PÁGINAS */}
-              <div className="flex">
-                {/* Botón para página anterior */}
-                <button 
-                  onClick={() => {
-                    console.log("Navegando a página anterior:", currentPage - 1);
-                    handlePageChange(currentPage - 1);
-                  }}
-                  disabled={currentPage <= 1 || productsLoading}
-                  className="border border-gray-300 rounded-l-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              {/* Paginación para escritorio - completa */}
+              <div className="hidden md:flex items-center">
+                <select 
+                  className="border border-gray-300 rounded-md text-xs px-2 py-1 mr-2"
+                  value={itemsPerPage}
+                  onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                  disabled={productsLoading}
                 >
-                  <ChevronLeft size={14} />
-                </button>
-                {/* Botón para página siguiente */}
-                <button 
-                  onClick={() => {
-                    console.log("Navegando a página siguiente:", currentPage + 1);
-                    handlePageChange(currentPage + 1);
-                  }}
-                  disabled={currentPage >= totalPages || productsLoading}
-                  className="border border-gray-300 border-l-0 rounded-r-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronRight size={14} />
-                </button>
+                  <option value={10}>10 por página</option>
+                  <option value={25}>25 por página</option>
+                  <option value={50}>50 por página</option>
+                  <option value={100}>100 por página</option>
+                </select>
+                <span className="text-xs text-gray-500 mr-2">
+                  Página {currentPage} de {totalPages || 1}
+                </span>
+                
+                {/* NAVEGACIÓN DE PÁGINAS */}
+                <div className="flex">
+                  <button 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1 || productsLoading}
+                    className="border border-gray-300 rounded-l-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages || productsLoading}
+                    className="border border-gray-300 border-l-0 rounded-r-md px-2 py-1 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -659,84 +641,105 @@ const ProductsView = () => {
             <p className="text-gray-500 mt-1">Prueba a cambiar los filtros o a crear nuevos productos</p>
           </div>
         ) : (
-          <>
-            {!productsLoading && wooProducts.length > 0 && (
-              <ProductList 
-                products={wooProducts}
-                categories={wooCategories}
-                onEditProduct={handleEditProduct}
-                selectedProducts={selectedProducts}
-                onToggleSelect={toggleSelectProduct}
-              />
-            )}
-          </>
+          <ProductList 
+            products={wooProducts}
+            categories={wooCategories}
+            onEditProduct={handleEditProduct}
+            selectedProducts={selectedProducts}
+            onToggleSelect={toggleSelectProduct}
+          />
         )}
         
         {/* PAGINACIÓN INFERIOR */}
         {totalPages > 1 && !productsLoading && (
-          <div className="bg-gray-50 px-6 py-3 border-t flex justify-between items-center">
-            <button 
-              onClick={() => handlePageChange(1)}
-              disabled={currentPage <= 1}
-              className="text-xs text-gray-700 hover:text-indigo-600 disabled:opacity-50 disabled:hover:text-gray-700"
-            >
-              Primera
-            </button>
-            
-            <div className="flex space-x-1">
-              {/* Números de página */}
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Lógica para mostrar 5 páginas alrededor de la actual
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={i}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`px-3 py-1 rounded-md text-xs ${
-                      currentPage === pageNum 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+          <div className="bg-gray-50 px-4 py-3 border-t flex justify-between items-center">
+            {/* Navegación móvil simplificada */}
+            <div className="flex md:hidden items-center w-full justify-between">
+              <button 
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="text-xs text-gray-700 py-1 px-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              
+              <span className="text-xs text-gray-600">
+                Página {currentPage} de {totalPages}
+              </span>
+              
+              <button 
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className="text-xs text-gray-700 py-1 px-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+              >
+                Siguiente
+              </button>
             </div>
             
-            <button 
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage >= totalPages}
-              className="text-xs text-gray-700 hover:text-indigo-600 disabled:opacity-50 disabled:hover:text-gray-700"
-            >
-              Última
-            </button>
+            {/* Navegación desktop completa */}
+            <div className="hidden md:flex justify-between items-center w-full">
+              <button 
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage <= 1}
+                className="text-xs text-gray-700 hover:text-indigo-600 disabled:opacity-50 disabled:hover:text-gray-700"
+              >
+                Primera
+              </button>
+              
+              <div className="flex space-x-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  // Lógica para mostrar 5 páginas alrededor de la actual
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded-md text-xs ${
+                        currentPage === pageNum 
+                          ? 'bg-indigo-600 text-white' 
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button 
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage >= totalPages}
+                className="text-xs text-gray-700 hover:text-indigo-600 disabled:opacity-50 disabled:hover:text-gray-700"
+              >
+                Última
+              </button>
+            </div>
           </div>
         )}
       </div>
       
-      {/* Modal de producto - MODIFICADO: ahora pasa el manejador de guardado sincronizado */}
+      {/* Modal de producto */}
       {showProductModal && (
         <ProductModal
           onClose={() => setShowProductModal(false)}
           product={editingProduct}
           categories={wooCategories}
           onSave={handleProductSaved}
-          saveProductFunction={handleSaveProductSynchronized} // Pasar la función de guardado sincronizado
+          saveProductFunction={handleSaveProductSynchronized}
         />
       )}
       
-      {/* Modal de edición masiva - MODIFICADO: ahora pasa el manejador de guardado sincronizado */}
+      {/* Modal de edición masiva */}
       {showBulkEditModal && (
         <BulkEditModal
           onClose={() => setShowBulkEditModal(false)}
@@ -744,7 +747,7 @@ const ProductsView = () => {
           products={wooProducts}
           categories={wooCategories}
           onUpdateProducts={handleBulkProductsUpdated}
-          saveProductFunction={handleSaveProductSynchronized} // Pasar la función de guardado sincronizado
+          saveProductFunction={handleSaveProductSynchronized}
         />
       )}
     </div>
