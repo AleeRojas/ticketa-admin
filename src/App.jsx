@@ -29,7 +29,7 @@ const MainContent = () => {
   } = useAppContext();
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden ml-16 lg:ml-0"> {/* Margen izquierdo solo en <lg */}
       <Header />
       <AppTabs />
       
