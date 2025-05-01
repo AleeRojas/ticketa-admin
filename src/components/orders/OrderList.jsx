@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CreditCard, Edit, Printer, Eye, Trash, ChevronRight } from 'lucide-react';
+import { Clock, CreditCard, Edit, Printer, Eye, Trash, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -20,6 +20,16 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
     return order.items.reduce((total, item) => {
       return total + (item.price * item.quantity);
     }, 0);
+  };
+  
+  // Formatear número con separador de miles (formato chileno)
+  const formatNumber = (num) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+  
+  // Formatear precio con símbolo de moneda chilena
+  const formatPrice = (price) => {
+    return "$" + formatNumber(parseFloat(price).toFixed(0));
   };
   
   // Obtener el número de mesa
@@ -65,104 +75,182 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
     );
   }
   
-  // Renderizar vista de lista
-  if (viewMode === 'list') {
-    return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+  // Vista de escritorio - tabla tradicional
+  const DesktopOrderTable = () => (
+    <div className="hidden md:block">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {orders.map(order => (
+            <tr key={order.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-gray-900">
+                  Mesa {getTableNumber(order.tableId)}
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="text-sm text-gray-900">
+                  {order.items.map((item, index) => (
+                    <span key={index} className="block">
+                      {item.quantity}x {item.name}
+                    </span>
+                  ))}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(order.status)}`}>
+                  {order.status}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center text-sm text-gray-500">
+                  <Clock size={14} className="mr-1" />
+                  {formatRelativeTime(order.createdAt)}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-gray-900">
+                  {formatPrice(calculateOrderTotal(order))}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div className="flex justify-end space-x-2">
+                  <button 
+                    onClick={() => {
+                      const table = tables.find(t => t.id === order.tableId);
+                      if (table) {
+                        setActiveOrderTable(table);
+                        setShowOrderModal(true);
+                      }
+                    }}
+                    className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50"
+                  >
+                    <Eye size={16} />
+                  </button>
+                  {order.status !== 'pagado' && (
+                    <>
+                      <button 
+                        onClick={() => handlePayOrder(order.id)}
+                        className="text-emerald-600 hover:text-emerald-900 p-1 rounded-full hover:bg-emerald-50"
+                      >
+                        <CreditCard size={16} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (confirm('¿Está seguro de que desea eliminar este pedido?')) {
+                            handleDeleteOrder(order.id);
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </>
+                  )}
+                  <button className="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-50">
+                    <Printer size={16} />
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {orders.map(order => (
-              <tr key={order.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    Mesa {getTableNumber(order.tableId)}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">
-                    {order.items.map((item, index) => (
-                      <span key={index} className="block">
-                        {item.quantity}x {item.name}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(order.status)}`}>
-                    {order.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock size={14} className="mr-1" />
-                    {formatRelativeTime(order.createdAt)}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {calculateOrderTotal(order)} 
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end space-x-2">
-                    <button 
-                      onClick={() => {
-                        const table = tables.find(t => t.id === order.tableId);
-                        if (table) {
-                          setActiveOrderTable(table);
-                          setShowOrderModal(true);
-                        }
-                      }}
-                      className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    {order.status !== 'pagado' && (
-                      <>
-                        <button 
-                          onClick={() => handlePayOrder(order.id)}
-                          className="text-emerald-600 hover:text-emerald-900 p-1 rounded-full hover:bg-emerald-50"
-                        >
-                          <CreditCard size={16} />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            if (confirm('¿Está seguro de que desea eliminar este pedido?')) {
-                              handleDeleteOrder(order.id);
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
-                        >
-                          <Trash size={16} />
-                        </button>
-                      </>
-                    )}
-                    <button className="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-50">
-                      <Printer size={16} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // Vista de móvil - lista de tarjetas para pedidos individuales
+  const MobileOrderCards = () => (
+    <div className="md:hidden space-y-4">
+      {orders.map(order => (
+        <div key={order.id} className="bg-white rounded-lg shadow p-3">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <div className="text-sm font-medium">Mesa {getTableNumber(order.tableId)}</div>
+              <div className="flex items-center text-xs text-gray-500">
+                <Clock size={12} className="mr-1" />
+                {formatRelativeTime(order.createdAt)}
+              </div>
+            </div>
+            <div className="flex items-center">
+              <span className={`px-1.5 py-0.5 text-xxs font-medium rounded-full ${getStatusClass(order.status)}`}>
+                {order.status}
+              </span>
+              <div className="ml-1 font-medium">
+                {formatPrice(calculateOrderTotal(order))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Lista de items */}
+          <div className="text-xs space-y-1 mb-3 bg-gray-50 p-2 rounded">
+            {order.items.map((item, index) => (
+              <div key={index} className="flex justify-between">
+                <span>{item.quantity}x {item.name}</span>
+                <span className="text-gray-500">{formatPrice(item.price * item.quantity)}</span>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
+          </div>
+          
+          {/* Botones de acción */}
+          <div className="flex justify-between items-center">
+            <button 
+              onClick={() => {
+                const table = tables.find(t => t.id === order.tableId);
+                if (table) {
+                  setActiveOrderTable(table);
+                  setShowOrderModal(true);
+                }
+              }}
+              className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full hover:bg-indigo-100 inline-flex items-center"
+            >
+              <Eye size={12} className="mr-1" />
+              Ver detalles
+            </button>
+            
+            <div className="flex space-x-2">
+              {order.status !== 'pagado' && (
+                <>
+                  <button 
+                    onClick={() => handlePayOrder(order.id)}
+                    className="p-1.5 bg-emerald-50 text-emerald-600 rounded-full hover:bg-emerald-100"
+                  >
+                    <CreditCard size={14} />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (confirm('¿Está seguro de que desea eliminar este pedido?')) {
+                        handleDeleteOrder(order.id);
+                      }
+                    }}
+                    className="p-1.5 bg-red-50 text-red-600 rounded-full hover:bg-red-100"
+                  >
+                    <Trash size={14} />
+                  </button>
+                </>
+              )}
+              <button className="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">
+                <Printer size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   
-  // Renderizar vista por grupo (mesas)
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  // Vista de escritorio por grupos (mesas)
+  const DesktopOrderGroups = () => (
+    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
       {Object.entries(ordersByTable).map(([tableId, tableOrders]) => {
         const tableNumber = getTableNumber(parseInt(tableId, 10));
         const totalAmount = tableOrders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
@@ -177,7 +265,7 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
                 <p className="text-sm text-gray-500">{tableOrders.length} pedidos</p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-semibold">{totalAmount} </p>
+                <p className="text-lg font-semibold">{formatPrice(totalAmount)}</p>
                 <p className="text-xs text-gray-500">
                   Actualizado {formatRelativeTime(latestOrder.updatedAt)}
                 </p>
@@ -197,7 +285,7 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
                       </span>
                     </div>
                     <span className="text-sm font-medium">
-                      {calculateOrderTotal(order)} 
+                      {formatPrice(calculateOrderTotal(order))} 
                     </span>
                   </div>
                   
@@ -208,7 +296,7 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
                           {item.quantity}x {item.name}
                         </span>
                         <span className="text-gray-500">
-                          {(item.price * item.quantity)} 
+                          {formatPrice(item.price * item.quantity)} 
                         </span>
                       </div>
                     ))}
@@ -255,6 +343,124 @@ const OrderList = ({ orders, ordersByTable, tables, viewMode }) => {
           </div>
         );
       })}
+    </div>
+  );
+
+  // Vista móvil por grupos (mesas)
+  const MobileOrderGroups = () => (
+    <div className="md:hidden space-y-4">
+      {Object.entries(ordersByTable).map(([tableId, tableOrders]) => {
+        const tableNumber = getTableNumber(parseInt(tableId, 10));
+        const totalAmount = tableOrders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
+        const latestOrder = tableOrders.reduce((latest, order) => 
+          new Date(order.createdAt) > new Date(latest.createdAt) ? order : latest, tableOrders[0]);
+        
+        return (
+          <div key={tableId} className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-gray-50 px-3 py-2 border-b flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-medium text-gray-900">Mesa {tableNumber}</h3>
+                <p className="text-xs text-gray-500">{tableOrders.length} pedidos</p>
+              </div>
+              <div className="text-right">
+                <p className="text-base font-semibold">{formatPrice(totalAmount)}</p>
+                <p className="text-xxs text-gray-500">
+                  Actualizado {formatRelativeTime(latestOrder.updatedAt)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="divide-y divide-gray-200">
+              {tableOrders.map(order => (
+                <div key={order.id} className="p-3 hover:bg-gray-50">
+                  <div className="flex justify-between items-start mb-1.5">
+                    <div className="flex items-center">
+                      <span className={`px-1.5 py-0.5 text-xxs font-semibold rounded-full ${getStatusClass(order.status)}`}>
+                        {order.status}
+                      </span>
+                      <span className="ml-1 text-xxs text-gray-500">
+                        {formatRelativeTime(order.createdAt)}
+                      </span>
+                    </div>
+                    <span className="text-xs font-medium">
+                      {formatPrice(calculateOrderTotal(order))} 
+                    </span>
+                  </div>
+                  
+                  <div className="mb-2 text-xxs space-y-0.5">
+                    {order.items.map((item, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span>
+                          {item.quantity}x {item.name}
+                        </span>
+                        <span className="text-gray-500">
+                          {formatPrice(item.price * item.quantity)} 
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex justify-end space-x-1.5">
+                    <button 
+                      onClick={() => {
+                        const table = tables.find(t => t.id === order.tableId);
+                        if (table) {
+                          setActiveOrderTable(table);
+                          setShowOrderModal(true);
+                        }
+                      }}
+                      className="text-xxs bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded hover:bg-indigo-100 inline-flex items-center"
+                    >
+                      <Eye size={10} className="mr-0.5" />
+                      Ver
+                    </button>
+                    {order.status !== 'pagado' && (
+                      <>
+                        <button 
+                          onClick={() => handlePayOrder(order.id)}
+                          className="text-xxs bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded hover:bg-emerald-100 inline-flex items-center"
+                        >
+                          <CreditCard size={10} className="mr-0.5" />
+                          Pagar
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (confirm('¿Está seguro de que desea eliminar este pedido?')) {
+                              handleDeleteOrder(order.id);
+                            }
+                          }}
+                          className="text-xxs bg-red-50 text-red-600 px-1.5 py-0.5 rounded hover:bg-red-100 inline-flex items-center"
+                        >
+                          <Trash size={10} className="mr-0.5" />
+                          Eliminar
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+  
+  // Renderizar según el modo de vista
+  if (viewMode === 'list') {
+    return (
+      <div className="bg-white rounded-lg shadow">
+        <DesktopOrderTable />
+        <MobileOrderCards />
+      </div>
+    );
+  }
+  
+  // Renderizar vista por grupos (mesas)
+  return (
+    <div>
+      <DesktopOrderGroups />
+      <MobileOrderGroups />
     </div>
   );
 };

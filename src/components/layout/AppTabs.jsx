@@ -75,7 +75,7 @@ const AppTabs = () => {
         {showScrollButtons && (
           <button 
             onClick={scrollLeft}
-            className="absolute left-0 z-10 bg-white bg-opacity-90 h-full px-1 flex items-center justify-center"
+            className="absolute left-0 z-10 bg-white bg-opacity-90 h-full px-1 flex items-center justify-center shadow-md"
           >
             <ChevronLeft size={20} />
           </button>
@@ -84,7 +84,7 @@ const AppTabs = () => {
         {/* Contenedor de pestañas con scroll horizontal */}
         <div 
           ref={tabsContainerRef}
-          className="flex space-x-1 px-4 overflow-x-auto scrollbar-none scroll-smooth py-1 mx-6"
+          className="flex space-x-1 px-2 md:px-4 overflow-x-auto scrollbar-none scroll-smooth py-1 w-full mx-0 md:mx-6 mobile-touch-scroll"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {tabs.map(tab => (
@@ -92,7 +92,7 @@ const AppTabs = () => {
               key={tab.id}
               data-tab-id={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${ 
+              className={`px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium border-b-2 whitespace-nowrap flex-shrink-0 ${ 
                 activeTab === tab.id 
                   ? 'border-indigo-500 text-indigo-600' 
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -107,7 +107,7 @@ const AppTabs = () => {
         {showScrollButtons && (
           <button 
             onClick={scrollRight}
-            className="absolute right-0 z-10 bg-white bg-opacity-90 h-full px-1 flex items-center justify-center"
+            className="absolute right-0 z-10 bg-white bg-opacity-90 h-full px-1 flex items-center justify-center shadow-md"
           >
             <ChevronRight size={20} />
           </button>

@@ -370,8 +370,8 @@ const ProductsView = () => {
   return (
     <div>
       {/* Cabecera y filtros */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 mb-6">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800">
           Gestión de productos
           {selectedProducts.length > 0 && (
             <span className="ml-2 text-sm font-normal text-gray-500">
@@ -380,33 +380,33 @@ const ProductsView = () => {
           )}
         </h2>
         
-        <div className="flex space-x-2">
-          <div className="relative">
+        <div className="flex flex-wrap w-full md:w-auto gap-2">
+          <div className="relative flex-grow md:flex-grow-0">
             <input 
               type="text" 
               placeholder="Buscar productos..." 
-              className="pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full md:w-auto pl-8 md:pl-10 pr-4 py-1.5 md:py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+            <Search className="absolute left-2 md:left-3 top-2 md:top-2.5 text-gray-400" size={16} />
           </div>
           
           <button 
-            className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
+            className="bg-white border border-gray-300 rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1 flex-shrink-0"
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
           >
-            <Filter size={16} />
+            <Filter size={14} className="md:block" />
             <span>Filtrar</span>
-            <ChevronDown size={14} />
+            <ChevronDown size={12} />
           </button>
           
           <button 
             onClick={handleAddProduct}
-            className="bg-indigo-600 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-indigo-700 flex items-center space-x-1"
+            className="bg-indigo-600 text-white rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium hover:bg-indigo-700 flex items-center space-x-1 flex-shrink-0 ml-auto md:ml-0"
           >
-            <Plus size={16} />
-            <span>Nuevo Producto</span>
+            <Plus size={14} className="md:block" />
+            <span>Nuevo</span>
           </button>
         </div>
       </div>
@@ -522,23 +522,23 @@ const ProductsView = () => {
       </div>
 
       {/* Estadísticas */}
-      <div className="flex mb-6 overflow-x-auto pb-2">
-        <div className="bg-white rounded-lg shadow p-4 mr-4 min-w-32">
-          <p className="text-sm text-gray-500">Total de productos</p>
-          <p className="text-2xl font-semibold">{formatNumber(stats.total)}</p>
+      <div className="grid grid-cols-2 md:flex gap-2 md:gap-4 mb-6 overflow-x-auto pb-2">
+        <div className="bg-white rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32">
+          <p className="text-xs md:text-sm text-gray-500 truncate">Total de productos</p>
+          <p className="text-xl md:text-2xl font-semibold">{formatNumber(stats.total)}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 mr-4 min-w-32">
-          <p className="text-sm text-gray-500">Categorías</p>
-          <p className="text-2xl font-semibold">{formatNumber(stats.categories)}</p>
+        <div className="bg-white rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32">
+          <p className="text-xs md:text-sm text-gray-500 truncate">Categorías</p>
+          <p className="text-xl md:text-2xl font-semibold">{formatNumber(stats.categories)}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 mr-4 min-w-32">
-          <p className="text-sm text-gray-500">Resultados</p>
-          <p className="text-2xl font-semibold">{formatNumber(stats.filtered)}</p>
+        <div className="bg-white rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32">
+          <p className="text-xs md:text-sm text-gray-500 truncate">Resultados</p>
+          <p className="text-xl md:text-2xl font-semibold">{formatNumber(stats.filtered)}</p>
         </div>
         {selectedProducts.length > 0 && (
-          <div className="bg-indigo-50 rounded-lg shadow p-4 min-w-32">
-            <p className="text-sm text-indigo-600">Seleccionados</p>
-            <p className="text-2xl font-semibold text-indigo-700">{formatNumber(stats.selected)}</p>
+          <div className="bg-indigo-50 rounded-lg shadow p-3 md:p-4 min-w-0 md:min-w-32 col-span-2 md:col-span-1">
+            <p className="text-xs md:text-sm text-indigo-600 truncate">Seleccionados</p>
+            <p className="text-xl md:text-2xl font-semibold text-indigo-700">{formatNumber(stats.selected)}</p>
           </div>
         )}
       </div>

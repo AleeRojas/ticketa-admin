@@ -31,19 +31,19 @@ const TablesView = () => {
   return (
     <div>
       {/* Cabecera con selectores de salón y acciones */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 mb-4 md:mb-6">
         <SalonSelector />
         
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap w-full md:w-auto gap-2">
           {/* Menú de salones */}
           <div className="relative">
             <button 
               onClick={() => setShowSalonMenu(!showSalonMenu)}
-              className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
+              className="bg-white border border-gray-300 rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
             >
-              <MapPin size={16} />
+              <MapPin size={14} className="md:w-4 md:h-4" />
               <span>Salones</span>
-              <ChevronDown size={16} />
+              <ChevronDown size={14} className="md:w-4 md:h-4" />
             </button>
             
             {showSalonMenu && (
@@ -54,9 +54,9 @@ const TablesView = () => {
                     setEditingSalon(null);
                     setShowSalonMenu(false);
                   }}
-                  className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center"
+                  className="px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center"
                 >
-                  <Plus size={16} className="mr-2" />
+                  <Plus size={14} className="mr-2" />
                   Crear nuevo salón
                 </button>
                 {/* El resto del menú se renderiza en SalonMenu.jsx */}
@@ -65,17 +65,17 @@ const TablesView = () => {
           </div>
           
           {/* Botón de filtrar */}
-          <button className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1">
-            <Filter size={16} />
+          <button className="bg-white border border-gray-300 rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1">
+            <Filter size={14} className="md:w-4 md:h-4" />
             <span>Filtrar</span>
           </button>
           
           {/* Botón de cambio de vista */}
           <button 
             onClick={() => setViewMode(viewMode === 'salon' ? 'lista' : 'salon')}
-            className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
+            className="bg-white border border-gray-300 rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
           >
-            <Eye size={16} />
+            <Eye size={14} className="md:w-4 md:h-4" />
             <span>{viewMode === 'salon' ? 'Ver lista' : 'Ver salón'}</span>
           </button>
           
@@ -83,9 +83,9 @@ const TablesView = () => {
           {viewMode === 'salon' && (
             <button 
               onClick={() => setViewType(viewType === 'visual' ? 'esquema' : 'visual')}
-              className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
+              className="bg-white border border-gray-300 rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center space-x-1"
             >
-              <LayoutGrid size={16} />
+              <LayoutGrid size={14} className="md:w-4 md:h-4" />
               <span>{viewType === 'visual' ? 'Vista esquema' : 'Vista visual'}</span>
             </button>
           )}
@@ -96,16 +96,16 @@ const TablesView = () => {
               setShowTableModal(true);
               setEditingTable(null);
             }}
-            className="bg-indigo-600 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-indigo-700 flex items-center space-x-1"
+            className="bg-indigo-600 text-white rounded-md px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium hover:bg-indigo-700 flex items-center space-x-1 ml-auto md:ml-0"
           >
-            <Plus size={16} />
+            <Plus size={14} className="md:w-4 md:h-4" />
             <span>Añadir Mesa</span>
           </button>
         </div>
       </div>
 
       {/* Indicadores de estado y stats */}
-      <div className="flex flex-wrap justify-between mb-6">
+      <div className="flex flex-col md:flex-row flex-wrap justify-between items-start md:items-center mb-4 md:mb-6 gap-2 md:gap-0">
         <StatusIndicators stats={salonStats} />
         
         <RealtimeIndicator 
