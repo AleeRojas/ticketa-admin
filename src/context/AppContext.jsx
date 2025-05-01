@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { initialTables } from '../data/initialTables';
 import { initialOrders } from '../data/initialOrders';
 import { initialSalons } from '../data/initialSalons';
@@ -13,7 +13,8 @@ const LOCAL_STORAGE_KEYS = {
   SALONS: 'restaurant_salons',
   PRODUCTS: 'restaurant_products',
   CATEGORIES: 'restaurant_categories',
-  LAST_SYNC: 'restaurant_last_sync'
+  LAST_SYNC: 'restaurant_last_sync',
+  SIDEBAR_STATE: 'restaurant_sidebar_state'
 };
 
 // Crear el contexto
@@ -30,6 +31,41 @@ export const AppProvider = ({ children }) => {
     syncEnabled,
     lastSyncTime: wooLastSyncTime
   } = useWooCommerceContext();
+
+  // Estados de UI
+  const [activeTab, setActiveTab] = useState('mesas');
+  const [activeSalon, setActiveSalon] = useState('principal');
+  const [viewMode, setViewMode] = useState('salon');
+  const [viewType, setViewType] = useState('visual');
+
+  // Estado para controlar el sidebar en dispositivos móviles
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    // En móviles, el sidebar comienza cerrado por defecto
+    const storedState = localStorage.getItem(LOCAL_STORAGE_KEYS.SIDEBAR_STATE);
+    return storedState ? JSON.parse(storedState) : false;
+  });
+
+  // Función para alternar el estado del sidebar
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen(prevState => !prevState);
+  }, []);
+
+  // Guardar estado del sidebar en localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.SIDEBAR_STATE, JSON.stringify(isSidebarOpen));
+    } catch (error) {
+      console.error('Error saving sidebar state to localStorage:', error);
+    }
+  }, [isSidebarOpen]);
+
+  // Cerrar automáticamente el sidebar en dispositivos móviles al cambiar de pestaña
+  useEffect(() => {
+    const isMobile = window.innerWidth < 1024; // lg breakpoint en Tailwind
+    if (isMobile && isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+  }, [activeTab, isSidebarOpen]);
 
   // Estados principales
   const [tables, setTables] = useState(() => {
@@ -81,12 +117,6 @@ export const AppProvider = ({ children }) => {
       return productCategories;
     }
   });
-  
-  // Estados de UI
-  const [activeTab, setActiveTab] = useState('mesas');
-  const [activeSalon, setActiveSalon] = useState('principal');
-  const [viewMode, setViewMode] = useState('salon');
-  const [viewType, setViewType] = useState('visual');
   
   // Estados de modales
   const [showTableModal, setShowTableModal] = useState(false);
@@ -451,6 +481,7 @@ export const AppProvider = ({ children }) => {
     isUpdating,
     filteredTables,
     salonStats,
+    isSidebarOpen, // Nuevo estado para el sidebar
     
     // Setters
     setTables,
@@ -474,6 +505,8 @@ export const AppProvider = ({ children }) => {
     setEditingCategory,
     setShowContextMenu,
     setShowSalonMenu,
+    setIsSidebarOpen, // Nuevo setter para el sidebar
+    toggleSidebar, // Nueva función para alternar el sidebar
     
     // Handlers
     handleSaveTable,
