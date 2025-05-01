@@ -12,7 +12,7 @@ import TableContextMenu from './components/tables/TableContextMenu';
 import ProductsView from './components/products/ProductsView';
 import OrdersView from './components/orders/OrdersView';
 import StatsView from './components/stats/StatsView';
-import MarketingView from './components/marketing/MarketingView'; // Importar el nuevo componente
+import MarketingView from './components/marketing/MarketingView';
 import WooSyncStatus from './components/woocommerce/WooSyncStatus';
 import { useAppContext } from './context/AppContext';
 import NetworkStatus from './components/common/NetworkStatus';
@@ -29,21 +29,21 @@ const MainContent = () => {
   } = useAppContext();
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <Header />
       <AppTabs />
       
       {/* Barra de estado de sincronización de WooCommerce */}
-      <div className="px-6 pt-4">
+      <div className="px-3 md:px-6 pt-2 md:pt-4">
         <WooSyncStatus />
       </div>
       
       {/* Contenido principal basado en la pestaña seleccionada */}
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-3 md:p-6 overflow-auto">
         {activeTab === 'mesas' && <TablesView />}
         {activeTab === 'pedidos' && <OrdersView />}
         {activeTab === 'productos' && <ProductsView />}
-        {activeTab === 'marketing' && <MarketingView />} {/* Nueva vista de Marketing */}
+        {activeTab === 'marketing' && <MarketingView />}
         {activeTab === 'estadisticas' && <StatsView />}
       </div>
       
@@ -66,7 +66,7 @@ const App = () => {
   return (
     <WooCommerceProvider>
       <AppProvider>
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-gray-100 relative overflow-hidden">
           <Sidebar />
           <MainContent />
         </div>
