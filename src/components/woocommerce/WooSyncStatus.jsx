@@ -54,9 +54,8 @@ const WooSyncStatus = () => {
   
   return (
     <div className="bg-white rounded-lg shadow p-3 md:p-4">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+      <div className="flex flex-col md:flex-row">
         <div className="flex flex-wrap items-center gap-2 mb-2 md:mb-0">
-          <h3 className="text-sm md:text-base font-medium">Sincronización</h3>
           {connectionStatus === true && (
             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full flex items-center">
               <Check size={10} className="mr-1" />

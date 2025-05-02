@@ -14,7 +14,6 @@ import OrdersView from './components/orders/OrdersView';
 import StatsView from './components/stats/StatsView';
 import MarketingView from './components/marketing/MarketingView';
 import WooSyncStatus from './components/woocommerce/WooSyncStatus';
-import NetworkStatus from './components/common/NetworkStatus';
 import ConflictResolutionModal from './components/modals/ConflictResolutionModal';
 
 // Componente principal de la aplicación que maneja las vistas
@@ -34,12 +33,6 @@ const MainContent = () => {
       <Header />
       <AppTabs />
 
-      {/* Barra de estado de sincronización de WooCommerce - solo visible en desktop
-         En móvil la mostramos en el Header */}
-      <div className="px-3 md:px-6 pt-2 md:pt-4 hidden md:block">
-        <WooSyncStatus />
-      </div>
-
       {/* Contenido principal basado en la pestaña seleccionada */}
       <div className="flex-1 p-3 md:p-6 overflow-auto">
         {activeTab === 'mesas' && <TablesView />}
@@ -57,7 +50,6 @@ const MainContent = () => {
       {/* Menú contextual */}
       {showContextMenu.visible && <TableContextMenu />}
 
-      <NetworkStatus />
       <ConflictResolutionModal />
     </div>
   );

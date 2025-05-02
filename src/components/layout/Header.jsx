@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Bell, X, Menu } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Bell, X, Menu, RefreshCw, Settings } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
+import { useWooCommerceContext } from '../../context/WooCommerceContext';
 import WooSyncStatus from '../woocommerce/WooSyncStatus';
 
 /**
@@ -48,6 +49,10 @@ const Header = () => {
             />
             <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
           </div>
+          
+          {/* Aquí añadiremos el componente de sincronización */}
+          <SyncStatusIndicator />
+          
           {/* Icono de notificaciones */}
           <div className="relative">
             <Bell className="text-gray-600 cursor-pointer" />
@@ -91,6 +96,10 @@ const Header = () => {
               <button onClick={() => setShowSearch(true)} className="text-gray-600 p-1">
                 <Search size={18} />
               </button>
+              
+              {/* Componente de sincronización móvil */}
+              <SyncStatusIndicator isMobile={true} />
+              
               {/* Icono de notificaciones móvil */}
               <div className="relative p-1">
                 <Bell className="text-gray-600" size={18} />
@@ -106,11 +115,58 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Barra de estado de sincronización en versión móvil */}
-      <div className="md:hidden mt-2">
-        <WooSyncStatus />
-      </div>
     </header>
+  );
+};
+
+
+const SyncStatusIndicator = ({ isMobile = false }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+  const { syncEnabled, syncing, lastSyncTime, performSync, isOnline, pendingOperations = [] } = useWooCommerceContext();
+  
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleIconClick = () => {
+    setShowDropdown(!showDropdown);
+  };
+  
+  // Cambiamos la clase pero no deshabilitamos el botón
+  const buttonClass = `${isMobile ? 'p-1' : 'p-1.5'} rounded-full ${
+    syncing ? 'text-indigo-400 bg-indigo-50' :
+    !syncEnabled ? 'text-gray-400 hover:bg-gray-100' :
+    isOnline ? 'text-indigo-600 hover:bg-indigo-50' : 'text-amber-500 hover:bg-amber-50'
+  }`;
+  
+  let indicator = null;
+  if (pendingOperations.length > 0) {
+    indicator = <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{pendingOperations.length}</span>;
+  } else if (!isOnline) {
+    indicator = <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">!</span>;
+  }
+  
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Quitamos el disabled={!syncEnabled} para permitir desplegar siempre */}
+      <button onClick={handleIconClick} className={buttonClass}>
+        <RefreshCw size={isMobile ? 18 : 16} className={syncing ? 'animate-spin' : ''} />
+        {indicator}
+      </button>
+      
+      {showDropdown && (
+        <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg z-30" style={{width: '280px'}}>
+          <WooSyncStatus inDropdown={true} />
+        </div>
+      )}
+    </div>
   );
 };
 
