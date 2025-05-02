@@ -343,9 +343,9 @@ const OrderModal = () => {
         </div>
         
         <div className="p-3 border-t bg-white sticky bottom-0">
-          <div className="grid grid-cols-2 gap-2">
-            {activeOrder.status !== 'pagado' && (
-              <>
+          {activeOrder.status !== 'pagado' ? (
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-2">
                 <button
                   onClick={() => payOrder(activeOrder.id)}
                   className="bg-emerald-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-emerald-700 flex items-center justify-center"
@@ -365,18 +365,35 @@ const OrderModal = () => {
                   <Trash size={16} className="mr-2" />
                   Eliminar
                 </button>
-              </>
-            )}
-            {activeOrder.status === 'pagado' && (
+              </div>
               <button
-                onClick={() => setMobileView('list')}
-                className="col-span-2 bg-gray-200 text-gray-800 rounded-md py-2.5 text-sm font-medium hover:bg-gray-300 flex items-center justify-center"
+                onClick={() => window.print()}
+                className="w-full bg-gray-200 text-gray-800 rounded-md py-2.5 text-sm font-medium hover:bg-gray-300 flex items-center justify-center"
               >
-                <Check size={16} className="mr-2" />
-                Completado
+                <Printer size={16} className="mr-2" />
+                Imprimir comanda
               </button>
-            )}
-          </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-gray-200 text-gray-800 rounded-md py-2.5 text-sm font-medium hover:bg-gray-300 flex items-center justify-center"
+                >
+                  <Printer size={16} className="mr-2" />
+                  Imprimir
+                </button>
+                <button
+                  onClick={() => setMobileView('list')}
+                  className="bg-gray-300 text-gray-800 rounded-md py-2.5 text-sm font-medium hover:bg-gray-400 flex items-center justify-center"
+                >
+                  <Check size={16} className="mr-2" />
+                  Completado
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
