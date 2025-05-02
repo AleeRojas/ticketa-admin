@@ -27,7 +27,8 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  /* Eliminamos overflow: hidden; de aquí */
+  /* overflow: hidden; */
 }
 
 /* Evitar que el usuario pueda hacer zoom en móviles, para mejor experiencia de aplicación */
@@ -35,11 +36,11 @@ html, body {
   input, select, textarea {
     font-size: 16px; /* Evita el zoom automático en iOS */
   }
-  
+
   .mobile-shadow {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
-  
+
   .mobile-touch-scroll {
     -webkit-overflow-scrolling: touch;
   }
